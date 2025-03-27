@@ -1,12 +1,20 @@
 package entity
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 type Church struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	Name        string    `json:"name"`
-	Address     string    `json:"address"`
-	PhoneNumber string    `json:"phone_number"`
-	Email       string    `json:"email"`
+	ID         uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
+	Name       string    `gorm:"type:varchar(255);not null"`
+	Address    string    `gorm:"type:text;not null"`
+	Phone      string    `gorm:"type:varchar(20)"`
+	Email      string    `gorm:"type:varchar(255)"`
+	Website    string    `gorm:"type:varchar(255)"`
+	CityID     uuid.UUID `gorm:"type:uuid;not null"`
+	ProvinceID uuid.UUID `gorm:"type:uuid;not null"`
+	City       City      `gorm:"foreignKey:CityID"`
+	Province   Province  `gorm:"foreignKey:ProvinceID"`
+
 	Timestamp
 }
