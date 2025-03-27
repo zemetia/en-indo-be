@@ -35,7 +35,7 @@ http://your-domain/logs
 ## How To Use
 1. Clone the repository or **Use This Template**
   ```bash
-  git clone https://github.com/Caknoooo/go-gin-clean-starter.git
+  git clone https://github.com/zemetia/en-indo-be.git
   ```
 2. Navigate to the project directory:
   ```bash

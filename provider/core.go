@@ -1,15 +1,15 @@
 package provider
 
 import (
-	"github.com/Caknoooo/go-gin-clean-starter/config"
-	"github.com/Caknoooo/go-gin-clean-starter/constants"
-	"github.com/Caknoooo/go-gin-clean-starter/service"
 	"github.com/samber/do"
+	"github.com/zemetia/en-indo-be/config"
+	"github.com/zemetia/en-indo-be/constants"
+	"github.com/zemetia/en-indo-be/service"
 	"gorm.io/gorm"
 )
 
 func InitDatabase(injector *do.Injector) {
-	do.ProvideNamed(injector, constants.DB, func (i *do.Injector) (*gorm.DB, error) {
+	do.ProvideNamed(injector, constants.DB, func(i *do.Injector) (*gorm.DB, error) {
 		return config.SetUpDatabaseConnection(), nil
 	})
 }
@@ -17,7 +17,7 @@ func InitDatabase(injector *do.Injector) {
 func RegisterDependencies(injector *do.Injector) {
 	InitDatabase(injector)
 
-	do.ProvideNamed(injector, constants.JWTService, func (i *do.Injector) (service.JWTService, error) {
+	do.ProvideNamed(injector, constants.JWTService, func(i *do.Injector) (service.JWTService, error) {
 		return service.NewJWTService(), nil
 	})
 

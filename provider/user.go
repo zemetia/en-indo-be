@@ -1,11 +1,11 @@
 package provider
 
 import (
-	"github.com/Caknoooo/go-gin-clean-starter/constants"
-	"github.com/Caknoooo/go-gin-clean-starter/controller"
-	"github.com/Caknoooo/go-gin-clean-starter/repository"
-	"github.com/Caknoooo/go-gin-clean-starter/service"
 	"github.com/samber/do"
+	"github.com/zemetia/en-indo-be/constants"
+	"github.com/zemetia/en-indo-be/controller"
+	"github.com/zemetia/en-indo-be/repository"
+	"github.com/zemetia/en-indo-be/service"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +20,7 @@ func ProvideUserDependencies(injector *do.Injector) {
 	userService := service.NewUserService(userRepository, jwtService)
 
 	// Controller
-	do.Provide(injector, func (i *do.Injector) (controller.UserController, error){
+	do.Provide(injector, func(i *do.Injector) (controller.UserController, error) {
 		return controller.NewUserController(userService), nil
 	})
 }

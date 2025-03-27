@@ -1,4 +1,4 @@
-module github.com/Caknoooo/go-gin-clean-starter
+module github.com/zemetia/en-indo-be
 
 go 1.23.0
 

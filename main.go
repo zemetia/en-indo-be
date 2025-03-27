@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/Caknoooo/go-gin-clean-starter/command"
-	"github.com/Caknoooo/go-gin-clean-starter/middleware"
-	"github.com/Caknoooo/go-gin-clean-starter/provider"
-	"github.com/Caknoooo/go-gin-clean-starter/routes"
 	"github.com/samber/do"
+	"github.com/zemetia/en-indo-be/command"
+	"github.com/zemetia/en-indo-be/middleware"
+	"github.com/zemetia/en-indo-be/provider"
+	"github.com/zemetia/en-indo-be/routes"
 
 	"github.com/common-nighthawk/go-figure"
 	"github.com/gin-gonic/gin"

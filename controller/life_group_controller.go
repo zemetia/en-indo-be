@@ -9,24 +9,24 @@ import (
 	"github.com/zemetia/en-indo-be/service"
 )
 
-type UserController struct {
-	userService *service.UserService
+type LifeGroupController struct {
+	lifeGroupService *service.LifeGroupService
 }
 
-func NewUserController(userService *service.UserService) *UserController {
-	return &UserController{
-		userService: userService,
+func NewLifeGroupController(lifeGroupService *service.LifeGroupService) *LifeGroupController {
+	return &LifeGroupController{
+		lifeGroupService: lifeGroupService,
 	}
 }
 
-func (c *UserController) Register(ctx *gin.Context) {
-	var req dto.RegisterRequest
+func (c *LifeGroupController) Create(ctx *gin.Context) {
+	var req dto.LifeGroupRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	response, err := c.userService.Register(&req)
+	response, err := c.lifeGroupService.Create(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -35,24 +35,8 @@ func (c *UserController) Register(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, response)
 }
 
-func (c *UserController) Login(ctx *gin.Context) {
-	var req dto.LoginRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	response, err := c.userService.Login(&req)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, response)
-}
-
-func (c *UserController) GetAll(ctx *gin.Context) {
-	response, err := c.userService.GetAll()
+func (c *LifeGroupController) GetAll(ctx *gin.Context) {
+	response, err := c.lifeGroupService.GetAll()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -61,14 +45,14 @@ func (c *UserController) GetAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *UserController) GetByID(ctx *gin.Context) {
+func (c *LifeGroupController) GetByID(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	response, err := c.userService.GetByID(id)
+	response, err := c.lifeGroupService.GetByID(id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -77,20 +61,20 @@ func (c *UserController) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *UserController) Update(ctx *gin.Context) {
+func (c *LifeGroupController) Update(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	var req dto.UpdateUserRequest
+	var req dto.LifeGroupRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	response, err := c.userService.Update(id, &req)
+	response, err := c.lifeGroupService.Update(id, &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -99,56 +83,35 @@ func (c *UserController) Update(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *UserController) Delete(ctx *gin.Context) {
+func (c *LifeGroupController) Delete(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	if err := c.userService.Delete(id); err != nil {
+	if err := c.lifeGroupService.Delete(id); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "LifeGroup deleted successfully"})
 }
 
-func (c *UserController) UpdatePassword(ctx *gin.Context) {
+func (c *LifeGroupController) UpdateLeader(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	var req dto.UpdatePasswordRequest
+	var req dto.UpdateLeaderRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := c.userService.UpdatePassword(id, &req); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
-}
-
-func (c *UserController) UpdateChurches(ctx *gin.Context) {
-	id, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
-		return
-	}
-
-	var req dto.UpdateChurchesRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	response, err := c.userService.UpdateChurches(id, &req)
+	response, err := c.lifeGroupService.UpdateLeader(id, &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -157,20 +120,20 @@ func (c *UserController) UpdateChurches(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *UserController) UpdateRoles(ctx *gin.Context) {
+func (c *LifeGroupController) UpdateMembers(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	var req dto.UpdateRolesRequest
+	var req dto.UpdateMembersRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	response, err := c.userService.UpdateRoles(id, &req)
+	response, err := c.lifeGroupService.UpdateMembers(id, &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -179,20 +142,36 @@ func (c *UserController) UpdateRoles(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *UserController) UpdateDepartments(ctx *gin.Context) {
+func (c *LifeGroupController) UpdatePersons(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	var req dto.UpdateDepartmentsRequest
+	var req dto.UpdatePersonsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	response, err := c.userService.UpdateDepartments(id, &req)
+	response, err := c.lifeGroupService.UpdatePersons(id, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *LifeGroupController) GetByChurchID(ctx *gin.Context) {
+	churchID, err := uuid.Parse(ctx.Param("church_id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid church ID format"})
+		return
+	}
+
+	response, err := c.lifeGroupService.GetByChurchID(churchID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

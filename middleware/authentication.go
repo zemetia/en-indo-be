@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Caknoooo/go-gin-clean-starter/dto"
-	"github.com/Caknoooo/go-gin-clean-starter/service"
-	"github.com/Caknoooo/go-gin-clean-starter/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/zemetia/en-indo-be/dto"
+	"github.com/zemetia/en-indo-be/service"
+	"github.com/zemetia/en-indo-be/utils"
 )
 
 func Authenticate(jwtService service.JWTService) gin.HandlerFunc {

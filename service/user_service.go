@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Caknoooo/go-gin-clean-starter/constants"
-	"github.com/Caknoooo/go-gin-clean-starter/dto"
-	"github.com/Caknoooo/go-gin-clean-starter/entity"
-	"github.com/Caknoooo/go-gin-clean-starter/helpers"
-	"github.com/Caknoooo/go-gin-clean-starter/repository"
-	"github.com/Caknoooo/go-gin-clean-starter/utils"
 	"github.com/google/uuid"
+	"github.com/zemetia/en-indo-be/constants"
+	"github.com/zemetia/en-indo-be/dto"
+	"github.com/zemetia/en-indo-be/entity"
+	"github.com/zemetia/en-indo-be/helpers"
+	"github.com/zemetia/en-indo-be/repository"
+	"github.com/zemetia/en-indo-be/utils"
 )
 
 type (

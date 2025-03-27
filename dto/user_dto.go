@@ -4,7 +4,10 @@ import (
 	"errors"
 	"mime/multipart"
 
-	"github.com/Caknoooo/go-gin-clean-starter/entity"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/zemetia/en-indo-be/entity"
 )
 
 const (
@@ -64,13 +67,16 @@ type (
 	}
 
 	UserResponse struct {
-		ID         string `json:"id"`
-		Name       string `json:"name"`
-		Email      string `json:"email"`
-		TelpNumber string `json:"telp_number"`
-		Role       string `json:"role"`
-		ImageUrl   string `json:"image_url"`
-		IsVerified bool   `json:"is_verified"`
+		ID            uuid.UUID             `json:"id"`
+		Email         string                `json:"email"`
+		ImageUrl      string                `json:"image_url"`
+		IsVerified    bool                  `json:"is_verified"`
+		Churches      []entity.Church       `json:"churches"`
+		Roles         []entity.Role         `json:"roles"`
+		Departments   []entity.Department   `json:"departments"`
+		Notifications []entity.Notification `json:"notifications"`
+		CreatedAt     time.Time             `json:"created_at"`
+		UpdatedAt     time.Time             `json:"updated_at"`
 	}
 
 	UserPaginationResponse struct {
@@ -124,5 +130,15 @@ type (
 	UpdateStatusIsVerifiedRequest struct {
 		UserId     string `json:"user_id" form:"user_id" binding:"required"`
 		IsVerified bool   `json:"is_verified" form:"is_verified"`
+	}
+
+	UserRequest struct {
+		Email       string              `json:"email" binding:"required,email"`
+		Password    string              `json:"password" binding:"required,min=6"`
+		ImageUrl    string              `json:"image_url"`
+		IsVerified  bool                `json:"is_verified"`
+		Churches    []entity.Church     `json:"churches"`
+		Roles       []entity.Role       `json:"roles"`
+		Departments []entity.Department `json:"departments"`
 	}
 )

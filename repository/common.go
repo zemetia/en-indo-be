@@ -3,7 +3,7 @@ package repository
 import (
 	"math"
 
-	"github.com/Caknoooo/go-gin-clean-starter/dto"
+	"github.com/zemetia/en-indo-be/dto"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +16,6 @@ func Paginate(req dto.PaginationRequest) func(db *gorm.DB) *gorm.DB {
 
 func TotalPage(count, perPage int64) int64 {
 	totalPage := int64(math.Ceil(float64(count) / float64(perPage)))
-	
+
 	return totalPage
 }

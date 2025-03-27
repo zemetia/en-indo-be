@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Caknoooo/go-gin-clean-starter/controller"
-	"github.com/Caknoooo/go-gin-clean-starter/entity"
-	"github.com/Caknoooo/go-gin-clean-starter/repository"
-	"github.com/Caknoooo/go-gin-clean-starter/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/zemetia/en-indo-be/controller"
+	"github.com/zemetia/en-indo-be/entity"
+	"github.com/zemetia/en-indo-be/repository"
+	"github.com/zemetia/en-indo-be/service"
 )
 
 func SetUpRoutes() *gin.Engine {

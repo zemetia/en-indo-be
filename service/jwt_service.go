@@ -76,7 +76,7 @@ func (j *jwtService) GetUserIDByToken(token string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	claims := t_Token.Claims.(jwt.MapClaims)
 	id := fmt.Sprintf("%v", claims["user_id"])
 	return id, nil
