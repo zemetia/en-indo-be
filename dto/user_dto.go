@@ -42,7 +42,7 @@ var (
 	ErrCreateUser             = errors.New("failed to create user")
 	ErrGetAllUser             = errors.New("failed to get all user")
 	ErrGetUserById            = errors.New("failed to get user by id")
-	ErrGetUserByEmail         = errors.New("failed to get user by email")
+	ErrGetByEmail             = errors.New("failed to get user by email")
 	ErrEmailAlreadyExists     = errors.New("email already exist")
 	ErrUpdateUser             = errors.New("failed to update user")
 	ErrUserNotAdmin           = errors.New("user not admin")
@@ -55,6 +55,7 @@ var (
 	ErrTokenInvalid           = errors.New("token invalid")
 	ErrTokenExpired           = errors.New("token expired")
 	ErrAccountAlreadyVerified = errors.New("account already verified")
+	ErrUploadProfileImage     = errors.New("failed to upload profile image")
 )
 
 type (
@@ -64,19 +65,18 @@ type (
 		Email      string                `json:"email" form:"email"`
 		Image      *multipart.FileHeader `json:"image" form:"image"`
 		Password   string                `json:"password" form:"password"`
+		PersonID   uuid.UUID             `json:"person_id" form:"person_id"`
 	}
 
 	UserResponse struct {
-		ID            uuid.UUID             `json:"id"`
-		Email         string                `json:"email"`
-		ImageUrl      string                `json:"image_url"`
-		IsVerified    bool                  `json:"is_verified"`
-		Churches      []entity.Church       `json:"churches"`
-		Roles         []entity.Role         `json:"roles"`
-		Departments   []entity.Department   `json:"departments"`
-		Notifications []entity.Notification `json:"notifications"`
-		CreatedAt     time.Time             `json:"created_at"`
-		UpdatedAt     time.Time             `json:"updated_at"`
+		ID         uuid.UUID      `json:"id"`
+		Email      string         `json:"email"`
+		ImageUrl   string         `json:"image_url"`
+		IsVerified bool           `json:"is_verified"`
+		PersonID   uuid.UUID      `json:"person_id"`
+		Person     PersonResponse `json:"person"`
+		CreatedAt  time.Time      `json:"created_at"`
+		UpdatedAt  time.Time      `json:"updated_at"`
 	}
 
 	UserPaginationResponse struct {
@@ -90,17 +90,15 @@ type (
 	}
 
 	UserUpdateRequest struct {
-		Name       string `json:"name" form:"name"`
-		TelpNumber string `json:"telp_number" form:"telp_number"`
-		Email      string `json:"email" form:"email"`
+		Email    string `json:"email" form:"email"`
+		Password string `json:"password" form:"password"`
+		ImageUrl string `json:"image_url" form:"image_url"`
 	}
 
 	UserUpdateResponse struct {
 		ID         string `json:"id"`
-		Name       string `json:"name"`
-		TelpNumber string `json:"telp_number"`
-		Role       string `json:"role"`
 		Email      string `json:"email"`
+		ImageUrl   string `json:"image_url"`
 		IsVerified bool   `json:"is_verified"`
 	}
 
@@ -124,7 +122,7 @@ type (
 
 	UserLoginResponse struct {
 		Token string `json:"token"`
-		Role  string `json:"role"`
+		Email string `json:"email"`
 	}
 
 	UpdateStatusIsVerifiedRequest struct {
@@ -133,12 +131,31 @@ type (
 	}
 
 	UserRequest struct {
-		Email       string              `json:"email" binding:"required,email"`
-		Password    string              `json:"password" binding:"required,min=6"`
-		ImageUrl    string              `json:"image_url"`
-		IsVerified  bool                `json:"is_verified"`
-		Churches    []entity.Church     `json:"churches"`
-		Roles       []entity.Role       `json:"roles"`
-		Departments []entity.Department `json:"departments"`
+		Email      string    `json:"email" binding:"required,email"`
+		Password   string    `json:"password" binding:"required,min=6"`
+		ImageUrl   string    `json:"image_url"`
+		IsVerified bool      `json:"is_verified"`
+		PersonID   uuid.UUID `json:"person_id" binding:"required"`
+	}
+
+	RegisterRequest struct {
+		Email    string    `json:"email" binding:"required,email"`
+		Password string    `json:"password" binding:"required,min=6"`
+		ImageUrl string    `json:"image_url"`
+		PersonID uuid.UUID `json:"person_id" binding:"required"`
+	}
+
+	LoginRequest struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	LoginResponse struct {
+		Token string       `json:"token"`
+		User  UserResponse `json:"user"`
+	}
+
+	UpdateVerificationRequest struct {
+		IsVerified bool `json:"is_verified" binding:"required"`
 	}
 )

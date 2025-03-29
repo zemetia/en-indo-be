@@ -1,136 +1,78 @@
-# Golang Gin Gorm Starter
-You can join in the development (Open Source). **Let's Go!!!**
+# Every Nation Indonesia Backend
 
-## Introduction 👋
-> Clean Architecture is an approach to organizing code in an application that focuses on separating responsibilities and dependencies between components. In the context of Golang, Clean Architecture refers to the application of Clean Architecture principles in developing applications using the Go programming language.
+Backend untuk website Every Nation Indonesia yang dibangun menggunakan Go dan Gin Framework.
 
+## Latar Belakang
 
-![image](https://github.com/user-attachments/assets/0b011bcc-f9c6-466e-a9da-964cce47a8bc)
+Every Nation Indonesia adalah jaringan gereja yang tersebar di seluruh Indonesia. Website ini dibangun untuk memudahkan pengelolaan data dan informasi terkait gereja-gereja Every Nation di Indonesia, termasuk manajemen jemaat, kelompok kehidupan (LifeGroup), dan berbagai aktivitas gereja.
 
-## Logs Feature 📋
+## Fitur-fitur
 
-The application includes a built-in logging system that allows you to monitor and track system queries. You can access the logs through a modern, user-friendly interface.
+### 1. Manajemen Gereja
+- Pendaftaran dan pengelolaan data gereja
+- Informasi detail gereja (alamat, kontak, dll)
+- Pengelompokan gereja berdasarkan wilayah (provinsi dan kota)
 
-### Accessing Logs
-To view the logs:
-1. Make sure the application is running
-2. Open your browser and navigate to:
-```bash
-http://your-domain/logs
+### 2. Manajemen Jemaat
+- Pendaftaran dan pengelolaan data jemaat
+- Informasi detail jemaat
+- Pengelompokan jemaat berdasarkan gereja
+
+### 3. Manajemen LifeGroup
+- Pembuatan dan pengelolaan kelompok kehidupan
+- Penugasan pemimpin LifeGroup
+- Pengelolaan anggota LifeGroup
+- Informasi jadwal dan lokasi pertemuan
+
+### 4. Manajemen Departemen
+- Pengelolaan departemen gereja
+- Penugasan staff departemen
+- Dokumentasi aktivitas departemen
+
+### 5. Manajemen Pengguna
+- Sistem autentikasi dan otorisasi
+- Pengelolaan hak akses pengguna
+- Profil pengguna
+
+### 6. Manajemen Notifikasi
+- Sistem notifikasi untuk berbagai aktivitas
+- Pengiriman notifikasi ke pengguna
+- Riwayat notifikasi
+
+## Teknologi yang Digunakan
+
+- Go (Golang)
+- Gin Framework
+- PostgreSQL
+- JWT untuk autentikasi
+- GORM untuk ORM
+
+## Struktur Proyek
+
+```
+.
+├── config/         # Konfigurasi aplikasi
+├── controller/     # Controller untuk handling request
+├── dto/           # Data Transfer Object
+├── entity/        # Model/Entity
+├── middleware/    # Middleware (auth, logging, dll)
+├── repository/    # Repository untuk akses database
+├── routes/        # Definisi routes
+├── service/       # Business logic
+└── main.go        # Entry point aplikasi
 ```
 
-### Features
-- **Monthly Filtering**: Filter logs by selecting different months
-- **Real-time Refresh**: Instantly refresh logs with the refresh button
-- **Expandable Entries**: Click on any log entry to view its full content
-- **Modern UI**: Clean and responsive interface with glass-morphism design
+## Cara Menjalankan
 
-![Logs Interface](https://github.com/user-attachments/assets/adda0afb-a1e4-4e05-b44e-87225fe63309)
+1. Clone repository
+2. Install dependencies
+3. Setup database
+4. Jalankan aplikasi
 
+## Kontribusi
 
-## Prerequisite 🏆
-- Go Version `>= go 1.20`
-- PostgreSQL Version `>= version 15.0`
+Silakan berkontribusi dengan membuat pull request atau melaporkan issues.
 
-## How To Use
-1. Clone the repository or **Use This Template**
-  ```bash
-  git clone https://github.com/zemetia/en-indo-be.git
-  ```
-2. Navigate to the project directory:
-  ```bash
-  cd go-gin-clean-starter
-  ```
-3. Copy the example environment file and configure it:
-  ```bash 
-  cp .env.example .env
-  ```
-There are 2 ways to do running
-### With Docker
-1. Build Docker
-  ```bash
-  make up
-  ```
-2. Run Initial UUID V4 for Auto Generate UUID
-  ```bash
-  make init-uuid
-  ```
-3. Run Migration and Seeder
-  ```bash
-  make migrate-seed
-  ```
+## Lisensi
 
-### Without Docker
-1. Configure `.env` with your PostgreSQL credentials:
-  ```bash
-  DB_HOST=localhost
-  DB_USER=postgres
-  DB_PASS=
-  DB_NAME=
-  DB_PORT=5432
-  ```
-2. Open the terminal and follow these steps:
-  - If you haven't downloaded PostgreSQL, download it first.
-  - Run:
-    ```bash
-    psql -U postgres
-    ```
-  - Create the database according to what you put in `.env` => if using uuid-ossp or auto generate (check file **/entity/user.go**):
-    ```bash
-    CREATE DATABASE your_database;
-    \c your_database
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; // remove default:uuid_generate_v4() if you not use you can uncomment code in user_entity.go
-    \q
-    ``` 
-3. Run the application:
-  ```bash
-  go run main.go
-  ```
-
-## Run Migrations, Seeder, and Script
-To run migrations, seed the database, and execute a script while keeping the application running, use the following command:
-
-```bash
-go run main.go --migrate --seed --run --script:example_script
-```
-
-- ``--migrate`` will apply all pending migrations.
-- ``--seed`` will seed the database with initial data.
-- ``--script:example_script`` will run the specified script (replace ``example_script`` with your script name).
-- ``--run`` will ensure the application continues running after executing the commands above.
-
-#### Migrate Database 
-To migrate the database schema 
-```bash
-go run main.go --migrate
-```
-This command will apply all pending migrations to your PostgreSQL database specified in `.env`
-
-#### Seeder Database 
-To seed the database with initial data:
-```bash
-go run main.go --seed
-```
-This command will populate the database with initial data using the seeders defined in your application.
-
-#### Script Run
-To run a specific script:
-```bash
-go run main.go --script:example_script
-```
-Replace ``example_script`` with the actual script name in **script.go** at script folder
-
-If you need the application to continue running after performing migrations, seeding, or executing a script, always append the ``--run`` option.
-
-## What did you get?
-By using this template, you get a ready-to-go architecture with pre-configured endpoints. The template provides a structured foundation for building your application using Golang with Clean Architecture principles.
-
-### Postman Documentation
-You can explore the available endpoints and their usage in the [Postman Documentation](https://documenter.getpostman.com/view/29665461/2s9YJaZQCG). This documentation provides a comprehensive overview of the API endpoints, including request and response examples, making it easier to understand how to interact with the API.
-
-### Issue / Pull Request Template
-
-The repository includes templates for issues and pull requests to standardize contributions and improve the quality of discussions and code reviews.
-
-- **Issue Template**: Helps in reporting bugs or suggesting features by providing a structured format to capture all necessary information.
-- **Pull Request Template**: Guides contributors to provide a clear description of changes, related issues, and testing steps, ensuring smooth and efficient code reviews.
+[MIT License](LICENSE)

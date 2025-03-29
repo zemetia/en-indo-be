@@ -3,19 +3,20 @@ package service
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"html/template"
 	"os"
 	"strings"
 	"time"
 
+	"mime/multipart"
+
 	"github.com/google/uuid"
-	"github.com/zemetia/en-indo-be/constants"
 	"github.com/zemetia/en-indo-be/dto"
 	"github.com/zemetia/en-indo-be/entity"
 	"github.com/zemetia/en-indo-be/helpers"
 	"github.com/zemetia/en-indo-be/repository"
 	"github.com/zemetia/en-indo-be/utils"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type (
@@ -23,24 +24,29 @@ type (
 		Register(ctx context.Context, req dto.UserCreateRequest) (dto.UserResponse, error)
 		GetAllUserWithPagination(ctx context.Context, req dto.PaginationRequest) (dto.UserPaginationResponse, error)
 		GetUserById(ctx context.Context, userId string) (dto.UserResponse, error)
-		GetUserByEmail(ctx context.Context, email string) (dto.UserResponse, error)
+		GetByEmail(ctx context.Context, email string) (dto.UserResponse, error)
 		SendVerificationEmail(ctx context.Context, req dto.SendVerificationEmailRequest) error
 		VerifyEmail(ctx context.Context, req dto.VerifyEmailRequest) (dto.VerifyEmailResponse, error)
 		Update(ctx context.Context, req dto.UserUpdateRequest, userId string) (dto.UserUpdateResponse, error)
 		Delete(ctx context.Context, userId string) error
 		Verify(ctx context.Context, req dto.UserLoginRequest) (dto.UserLoginResponse, error)
+		UploadProfileImage(ctx context.Context, file *multipart.FileHeader) (string, error)
 	}
 
 	userService struct {
-		userRepo   repository.UserRepository
-		jwtService JWTService
+		userRepo        repository.UserRepository
+		personRepo      repository.PersonRepository
+		documentService DocumentService
+		jwtService      JWTService
 	}
 )
 
-func NewUserService(userRepo repository.UserRepository, jwtService JWTService) UserService {
+func NewUserService(userRepo repository.UserRepository, personRepo repository.PersonRepository, documentService DocumentService, jwtService JWTService) UserService {
 	return &userService{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo:        userRepo,
+		personRepo:      personRepo,
+		documentService: documentService,
+		jwtService:      jwtService,
 	}
 }
 
@@ -50,31 +56,37 @@ const (
 )
 
 func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (dto.UserResponse, error) {
-	var filename string
-
-	_, flag, _ := s.userRepo.CheckEmail(ctx, nil, req.Email)
-	if flag {
+	// Cek apakah email sudah terdaftar
+	existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+	if err == nil && existingUser != nil {
 		return dto.UserResponse{}, dto.ErrEmailAlreadyExists
 	}
 
-	if req.Image != nil {
-		imageId := uuid.New()
-		ext := utils.GetExtensions(req.Image.Filename)
+	// Cek apakah person exists
+	person, err := s.personRepo.GetByID(ctx, req.PersonID)
+	if err != nil {
+		return dto.UserResponse{}, dto.ErrUserNotFound
+	}
 
-		filename = fmt.Sprintf("profile/%s.%s", imageId, ext)
-		if err := utils.UploadFile(req.Image, filename); err != nil {
-			return dto.UserResponse{}, err
-		}
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return dto.UserResponse{}, dto.ErrCreateUser
+	}
+
+	imageUrl, err := s.UploadProfileImage(ctx, req.Image)
+	if err != nil {
+		return dto.UserResponse{}, dto.ErrUploadProfileImage
 	}
 
 	user := entity.User{
-		Name:       req.Name,
-		TelpNumber: req.TelpNumber,
-		ImageUrl:   filename,
-		Role:       constants.ENUM_ROLE_USER,
+		ID:         uuid.New(),
 		Email:      req.Email,
-		Password:   req.Password,
+		Password:   string(hashedPassword),
+		ImageUrl:   imageUrl,
 		IsVerified: false,
+		PersonID:   req.PersonID,
+		Person:     *person,
 	}
 
 	userReg, err := s.userRepo.RegisterUser(ctx, nil, user)
@@ -93,13 +105,41 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 	}
 
 	return dto.UserResponse{
-		ID:         userReg.ID.String(),
-		Name:       userReg.Name,
-		TelpNumber: userReg.TelpNumber,
-		ImageUrl:   userReg.ImageUrl,
-		Role:       userReg.Role,
+		ID:         userReg.ID,
 		Email:      userReg.Email,
+		ImageUrl:   userReg.ImageUrl,
 		IsVerified: userReg.IsVerified,
+		PersonID:   userReg.PersonID,
+		Person: dto.PersonResponse{
+			ID:                userReg.Person.ID,
+			Nama:              userReg.Person.Nama,
+			NamaLain:          userReg.Person.NamaLain,
+			Gender:            userReg.Person.Gender,
+			TempatLahir:       userReg.Person.TempatLahir,
+			TanggalLahir:      userReg.Person.TanggalLahir.Format("2006-01-02"),
+			FaseHidup:         userReg.Person.FaseHidup,
+			StatusPerkawinan:  userReg.Person.StatusPerkawinan,
+			NamaPasangan:      userReg.Person.NamaPasangan,
+			PasanganID:        userReg.Person.PasanganID,
+			TanggalPerkawinan: userReg.Person.TanggalPerkawinan.Format("2006-01-02"),
+			Alamat:            userReg.Person.Alamat,
+			NomorTelepon:      userReg.Person.NomorTelepon,
+			Email:             userReg.Person.Email,
+			Ayah:              userReg.Person.Ayah,
+			Ibu:               userReg.Person.Ibu,
+			Kerinduan:         userReg.Person.Kerinduan,
+			KomitmenBerjemaat: userReg.Person.KomitmenBerjemaat,
+			Status:            userReg.Person.Status,
+			KodeJemaat:        userReg.Person.KodeJemaat,
+			ChurchID:          userReg.Person.ChurchID,
+			Church:            userReg.Person.Church.Name,
+			KabupatenID:       userReg.Person.KabupatenID,
+			Kabupaten:         userReg.Person.Kabupaten.Name,
+			CreatedAt:         userReg.Person.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:         userReg.Person.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+		CreatedAt: userReg.CreatedAt,
+		UpdatedAt: userReg.UpdatedAt,
 	}, nil
 }
 
@@ -145,7 +185,7 @@ func makeVerificationEmail(receiverEmail string) (map[string]string, error) {
 }
 
 func (s *userService) SendVerificationEmail(ctx context.Context, req dto.SendVerificationEmailRequest) error {
-	user, err := s.userRepo.GetUserByEmail(ctx, nil, req.Email)
+	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		return dto.ErrEmailNotFound
 	}
@@ -190,7 +230,7 @@ func (s *userService) VerifyEmail(ctx context.Context, req dto.VerifyEmailReques
 		}, dto.ErrTokenExpired
 	}
 
-	user, err := s.userRepo.GetUserByEmail(ctx, nil, email)
+	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return dto.VerifyEmailResponse{}, dto.ErrUserNotFound
 	}
@@ -199,7 +239,7 @@ func (s *userService) VerifyEmail(ctx context.Context, req dto.VerifyEmailReques
 		return dto.VerifyEmailResponse{}, dto.ErrAccountAlreadyVerified
 	}
 
-	updatedUser, err := s.userRepo.UpdateUser(ctx, nil, entity.User{
+	err = s.userRepo.Update(ctx, &entity.User{
 		ID:         user.ID,
 		IsVerified: true,
 	})
@@ -209,7 +249,7 @@ func (s *userService) VerifyEmail(ctx context.Context, req dto.VerifyEmailReques
 
 	return dto.VerifyEmailResponse{
 		Email:      email,
-		IsVerified: updatedUser.IsVerified,
+		IsVerified: true,
 	}, nil
 }
 
@@ -222,13 +262,41 @@ func (s *userService) GetAllUserWithPagination(ctx context.Context, req dto.Pagi
 	var datas []dto.UserResponse
 	for _, user := range dataWithPaginate.Users {
 		data := dto.UserResponse{
-			ID:         user.ID.String(),
-			Name:       user.Name,
+			ID:         user.ID,
 			Email:      user.Email,
-			Role:       user.Role,
-			TelpNumber: user.TelpNumber,
 			ImageUrl:   user.ImageUrl,
 			IsVerified: user.IsVerified,
+			PersonID:   user.PersonID,
+			Person: dto.PersonResponse{
+				ID:                user.Person.ID,
+				Nama:              user.Person.Nama,
+				NamaLain:          user.Person.NamaLain,
+				Gender:            user.Person.Gender,
+				TempatLahir:       user.Person.TempatLahir,
+				TanggalLahir:      user.Person.TanggalLahir.Format("2006-01-02"),
+				FaseHidup:         user.Person.FaseHidup,
+				StatusPerkawinan:  user.Person.StatusPerkawinan,
+				NamaPasangan:      user.Person.NamaPasangan,
+				PasanganID:        user.Person.PasanganID,
+				TanggalPerkawinan: user.Person.TanggalPerkawinan.Format("2006-01-02"),
+				Alamat:            user.Person.Alamat,
+				NomorTelepon:      user.Person.NomorTelepon,
+				Email:             user.Person.Email,
+				Ayah:              user.Person.Ayah,
+				Ibu:               user.Person.Ibu,
+				Kerinduan:         user.Person.Kerinduan,
+				KomitmenBerjemaat: user.Person.KomitmenBerjemaat,
+				Status:            user.Person.Status,
+				KodeJemaat:        user.Person.KodeJemaat,
+				ChurchID:          user.Person.ChurchID,
+				Church:            user.Person.Church.Name,
+				KabupatenID:       user.Person.KabupatenID,
+				Kabupaten:         user.Person.Kabupaten.Name,
+				CreatedAt:         user.Person.CreatedAt.Format("2006-01-02 15:04:05"),
+				UpdatedAt:         user.Person.UpdatedAt.Format("2006-01-02 15:04:05"),
+			},
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
 		}
 
 		datas = append(datas, data)
@@ -252,30 +320,86 @@ func (s *userService) GetUserById(ctx context.Context, userId string) (dto.UserR
 	}
 
 	return dto.UserResponse{
-		ID:         user.ID.String(),
-		Name:       user.Name,
-		TelpNumber: user.TelpNumber,
-		Role:       user.Role,
+		ID:         user.ID,
 		Email:      user.Email,
 		ImageUrl:   user.ImageUrl,
 		IsVerified: user.IsVerified,
+		PersonID:   user.PersonID,
+		Person: dto.PersonResponse{
+			ID:                user.Person.ID,
+			Nama:              user.Person.Nama,
+			NamaLain:          user.Person.NamaLain,
+			Gender:            user.Person.Gender,
+			TempatLahir:       user.Person.TempatLahir,
+			TanggalLahir:      user.Person.TanggalLahir.Format("2006-01-02"),
+			FaseHidup:         user.Person.FaseHidup,
+			StatusPerkawinan:  user.Person.StatusPerkawinan,
+			NamaPasangan:      user.Person.NamaPasangan,
+			PasanganID:        user.Person.PasanganID,
+			TanggalPerkawinan: user.Person.TanggalPerkawinan.Format("2006-01-02"),
+			Alamat:            user.Person.Alamat,
+			NomorTelepon:      user.Person.NomorTelepon,
+			Email:             user.Person.Email,
+			Ayah:              user.Person.Ayah,
+			Ibu:               user.Person.Ibu,
+			Kerinduan:         user.Person.Kerinduan,
+			KomitmenBerjemaat: user.Person.KomitmenBerjemaat,
+			Status:            user.Person.Status,
+			KodeJemaat:        user.Person.KodeJemaat,
+			ChurchID:          user.Person.ChurchID,
+			Church:            user.Person.Church.Name,
+			KabupatenID:       user.Person.KabupatenID,
+			Kabupaten:         user.Person.Kabupaten.Name,
+			CreatedAt:         user.Person.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:         user.Person.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
-func (s *userService) GetUserByEmail(ctx context.Context, email string) (dto.UserResponse, error) {
-	emails, err := s.userRepo.GetUserByEmail(ctx, nil, email)
+func (s *userService) GetByEmail(ctx context.Context, email string) (dto.UserResponse, error) {
+	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return dto.UserResponse{}, dto.ErrGetUserByEmail
+		return dto.UserResponse{}, dto.ErrGetByEmail
 	}
 
 	return dto.UserResponse{
-		ID:         emails.ID.String(),
-		Name:       emails.Name,
-		TelpNumber: emails.TelpNumber,
-		Role:       emails.Role,
-		Email:      emails.Email,
-		ImageUrl:   emails.ImageUrl,
-		IsVerified: emails.IsVerified,
+		ID:         user.ID,
+		Email:      user.Email,
+		ImageUrl:   user.ImageUrl,
+		IsVerified: user.IsVerified,
+		PersonID:   user.PersonID,
+		Person: dto.PersonResponse{
+			ID:                user.Person.ID,
+			Nama:              user.Person.Nama,
+			NamaLain:          user.Person.NamaLain,
+			Gender:            user.Person.Gender,
+			TempatLahir:       user.Person.TempatLahir,
+			TanggalLahir:      user.Person.TanggalLahir.Format("2006-01-02"),
+			FaseHidup:         user.Person.FaseHidup,
+			StatusPerkawinan:  user.Person.StatusPerkawinan,
+			NamaPasangan:      user.Person.NamaPasangan,
+			PasanganID:        user.Person.PasanganID,
+			TanggalPerkawinan: user.Person.TanggalPerkawinan.Format("2006-01-02"),
+			Alamat:            user.Person.Alamat,
+			NomorTelepon:      user.Person.NomorTelepon,
+			Email:             user.Person.Email,
+			Ayah:              user.Person.Ayah,
+			Ibu:               user.Person.Ibu,
+			Kerinduan:         user.Person.Kerinduan,
+			KomitmenBerjemaat: user.Person.KomitmenBerjemaat,
+			Status:            user.Person.Status,
+			KodeJemaat:        user.Person.KodeJemaat,
+			ChurchID:          user.Person.ChurchID,
+			Church:            user.Person.Church.Name,
+			KabupatenID:       user.Person.KabupatenID,
+			Kabupaten:         user.Person.Kabupaten.Name,
+			CreatedAt:         user.Person.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:         user.Person.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -285,25 +409,35 @@ func (s *userService) Update(ctx context.Context, req dto.UserUpdateRequest, use
 		return dto.UserUpdateResponse{}, dto.ErrUserNotFound
 	}
 
-	data := entity.User{
-		ID:         user.ID,
-		Name:       req.Name,
-		TelpNumber: req.TelpNumber,
-		Role:       user.Role,
-		Email:      req.Email,
+	// Cek apakah email sudah terdaftar (jika email diubah)
+	if req.Email != user.Email {
+		existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+		if err == nil && existingUser != nil {
+			return dto.UserUpdateResponse{}, dto.ErrEmailAlreadyExists
+		}
 	}
 
-	userUpdate, err := s.userRepo.UpdateUser(ctx, nil, data)
+	// Hash password jika diubah
+	if req.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return dto.UserUpdateResponse{}, dto.ErrUpdateUser
+		}
+		user.Password = string(hashedPassword)
+	}
+
+	user.Email = req.Email
+	user.ImageUrl = req.ImageUrl
+
+	err = s.userRepo.Update(ctx, &user)
 	if err != nil {
 		return dto.UserUpdateResponse{}, dto.ErrUpdateUser
 	}
 
 	return dto.UserUpdateResponse{
-		ID:         userUpdate.ID.String(),
-		Name:       userUpdate.Name,
-		TelpNumber: userUpdate.TelpNumber,
-		Role:       userUpdate.Role,
-		Email:      userUpdate.Email,
+		ID:         user.ID.String(),
+		Email:      user.Email,
+		ImageUrl:   user.ImageUrl,
 		IsVerified: user.IsVerified,
 	}, nil
 }
@@ -313,8 +447,7 @@ func (s *userService) Delete(ctx context.Context, userId string) error {
 	if err != nil {
 		return dto.ErrUserNotFound
 	}
-
-	err = s.userRepo.DeleteUser(ctx, nil, user.ID.String())
+	err = s.userRepo.Delete(ctx, user.ID)
 	if err != nil {
 		return dto.ErrDeleteUser
 	}
@@ -337,10 +470,14 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 		return dto.UserLoginResponse{}, dto.ErrPasswordNotMatch
 	}
 
-	token := s.jwtService.GenerateToken(check.ID.String(), check.Role)
+	token := s.jwtService.GenerateToken(check.ID.String(), check.Email)
 
 	return dto.UserLoginResponse{
 		Token: token,
-		Role:  check.Role,
+		Email: check.Email,
 	}, nil
+}
+
+func (s *userService) UploadProfileImage(ctx context.Context, file *multipart.FileHeader) (string, error) {
+	return s.documentService.UploadImage(file)
 }

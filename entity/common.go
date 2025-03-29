@@ -7,12 +7,12 @@ import (
 )
 
 type Timestamp struct {
-	CreatedAt time.Time `gorm:"type:timestamp with time zone" json:"created_at"`
-	UpdatedAt time.Time `gorm:"type:timestamp with time zone" json:"updated_at"`
-	DeletedAt gorm.DeletedAt
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
 type Authorization struct {
 	Token string `json:"token"`
-	Role  string `json:"role"`
+	Yoel  string `json:"yoel"`
 }

@@ -15,16 +15,21 @@ func User(route *gin.Engine, injector *do.Injector) {
 
 	routes := route.Group("/api/user")
 	{
-		// Auth routes (tidak perlu autentikasi)
+		// Public routes
 		routes.POST("/register", userController.Register)
 		routes.POST("/login", userController.Login)
-		routes.POST("/verify_email", userController.VerifyEmail)
-		routes.POST("/send_verification_email", userController.SendVerificationEmail)
 
-		// Protected routes (memerlukan autentikasi)
-		routes.GET("/me", middleware.Authenticate(jwtService), userController.Me)
-		routes.GET("", middleware.Authenticate(jwtService), userController.GetAllUser)
-		routes.DELETE("", middleware.Authenticate(jwtService), userController.Delete)
-		routes.PATCH("", middleware.Authenticate(jwtService), userController.Update)
+		// Protected routes
+		protected := routes.Group("")
+		protected.Use(middleware.Authenticate(jwtService))
+		{
+			protected.GET("", userController.GetAll)
+			protected.GET("/:id", userController.GetByID)
+			protected.GET("/email/:email", userController.GetByEmail)
+			// protected.GET("/person/:person_id", userController.GetByPersonID)
+			protected.PUT("/:id", userController.Update)
+			protected.DELETE("/:id", userController.Delete)
+			protected.POST("/:id/upload-profile-image", userController.UploadProfileImage)
+		}
 	}
 }

@@ -12,12 +12,14 @@ import (
 func ProvideUserDependencies(injector *do.Injector) {
 	db := do.MustInvokeNamed[*gorm.DB](injector, constants.DB)
 	jwtService := do.MustInvokeNamed[service.JWTService](injector, constants.JWTService)
+	documentService := do.MustInvokeNamed[service.DocumentService](injector, constants.DocumentService)
 
 	// Repository
 	userRepository := repository.NewUserRepository(db)
+	personRepository := repository.NewPersonRepository(db)
 
 	// Service
-	userService := service.NewUserService(userRepository, jwtService)
+	userService := service.NewUserService(userRepository, personRepository, documentService, jwtService)
 
 	// Controller
 	do.Provide(injector, func(i *do.Injector) (controller.UserController, error) {

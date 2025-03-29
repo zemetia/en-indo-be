@@ -7,21 +7,29 @@ import (
 	"github.com/zemetia/en-indo-be/repository"
 )
 
-type DepartmentService struct {
-	departmentRepository *repository.DepartmentRepository
+type DepartmentService interface {
+	Create(req *dto.DepartmentRequest) (*dto.DepartmentResponse, error)
+	GetAll() ([]dto.DepartmentResponse, error)
+	GetByID(id uuid.UUID) (*dto.DepartmentResponse, error)
+	GetByChurchID(churchID uuid.UUID) ([]dto.DepartmentResponse, error)
+	Update(id uuid.UUID, req *dto.DepartmentRequest) (*dto.DepartmentResponse, error)
+	Delete(id uuid.UUID) error
 }
 
-func NewDepartmentService(departmentRepository *repository.DepartmentRepository) *DepartmentService {
-	return &DepartmentService{
+type departmentService struct {
+	departmentRepository repository.DepartmentRepository
+}
+
+func NewDepartmentService(departmentRepository repository.DepartmentRepository) DepartmentService {
+	return &departmentService{
 		departmentRepository: departmentRepository,
 	}
 }
 
-func (s *DepartmentService) Create(req *dto.DepartmentRequest) (*dto.DepartmentResponse, error) {
+func (s *departmentService) Create(req *dto.DepartmentRequest) (*dto.DepartmentResponse, error) {
 	department := &entity.Department{
 		Name:        req.Name,
 		Description: req.Description,
-		ChurchID:    req.ChurchID,
 	}
 
 	if err := s.departmentRepository.Create(department); err != nil {
@@ -31,7 +39,7 @@ func (s *DepartmentService) Create(req *dto.DepartmentRequest) (*dto.DepartmentR
 	return s.GetByID(department.ID)
 }
 
-func (s *DepartmentService) GetAll() ([]dto.DepartmentResponse, error) {
+func (s *departmentService) GetAll() ([]dto.DepartmentResponse, error) {
 	departments, err := s.departmentRepository.GetAll()
 	if err != nil {
 		return nil, err
@@ -45,7 +53,7 @@ func (s *DepartmentService) GetAll() ([]dto.DepartmentResponse, error) {
 	return responses, nil
 }
 
-func (s *DepartmentService) GetByID(id uuid.UUID) (*dto.DepartmentResponse, error) {
+func (s *departmentService) GetByID(id uuid.UUID) (*dto.DepartmentResponse, error) {
 	department, err := s.departmentRepository.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -54,7 +62,7 @@ func (s *DepartmentService) GetByID(id uuid.UUID) (*dto.DepartmentResponse, erro
 	return s.toResponse(department), nil
 }
 
-func (s *DepartmentService) GetByChurchID(churchID uuid.UUID) ([]dto.DepartmentResponse, error) {
+func (s *departmentService) GetByChurchID(churchID uuid.UUID) ([]dto.DepartmentResponse, error) {
 	departments, err := s.departmentRepository.GetByChurchID(churchID)
 	if err != nil {
 		return nil, err
@@ -68,7 +76,7 @@ func (s *DepartmentService) GetByChurchID(churchID uuid.UUID) ([]dto.DepartmentR
 	return responses, nil
 }
 
-func (s *DepartmentService) Update(id uuid.UUID, req *dto.DepartmentRequest) (*dto.DepartmentResponse, error) {
+func (s *departmentService) Update(id uuid.UUID, req *dto.DepartmentRequest) (*dto.DepartmentResponse, error) {
 	department, err := s.departmentRepository.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -76,7 +84,6 @@ func (s *DepartmentService) Update(id uuid.UUID, req *dto.DepartmentRequest) (*d
 
 	department.Name = req.Name
 	department.Description = req.Description
-	department.ChurchID = req.ChurchID
 
 	if err := s.departmentRepository.Update(department); err != nil {
 		return nil, err
@@ -85,16 +92,15 @@ func (s *DepartmentService) Update(id uuid.UUID, req *dto.DepartmentRequest) (*d
 	return s.GetByID(id)
 }
 
-func (s *DepartmentService) Delete(id uuid.UUID) error {
+func (s *departmentService) Delete(id uuid.UUID) error {
 	return s.departmentRepository.Delete(id)
 }
 
-func (s *DepartmentService) toResponse(department *entity.Department) *dto.DepartmentResponse {
+func (s *departmentService) toResponse(department *entity.Department) *dto.DepartmentResponse {
 	return &dto.DepartmentResponse{
 		ID:          department.ID,
 		Name:        department.Name,
 		Description: department.Description,
-		ChurchID:    department.ChurchID,
 		CreatedAt:   department.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:   department.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}

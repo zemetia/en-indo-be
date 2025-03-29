@@ -21,5 +21,9 @@ func RegisterDependencies(injector *do.Injector) {
 		return service.NewJWTService(), nil
 	})
 
+	do.ProvideNamed(injector, constants.DocumentService, func(i *do.Injector) (service.DocumentService, error) {
+		return service.NewDocumentService(constants.BASE_URL, constants.UPLOAD_PATH), nil
+	})
+
 	ProvideUserDependencies(injector)
 }

@@ -7,25 +7,37 @@ import (
 	"github.com/zemetia/en-indo-be/repository"
 )
 
-type NotificationService struct {
-	notificationRepository *repository.NotificationRepository
+type NotificationService interface {
+	Create(req *dto.NotificationRequest) (*dto.NotificationResponse, error)
+	GetAll() ([]dto.NotificationResponse, error)
+	GetByID(id uuid.UUID) (*dto.NotificationResponse, error)
+	GetByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error)
+	GetUnreadByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error)
+	Update(id uuid.UUID, req *dto.NotificationRequest) (*dto.NotificationResponse, error)
+	Delete(id uuid.UUID) error
+	MarkAsRead(id uuid.UUID) error
+	MarkAllAsRead(userID uuid.UUID) error
+	DeleteByUserID(userID uuid.UUID) error
 }
 
-func NewNotificationService(notificationRepository *repository.NotificationRepository) *NotificationService {
-	return &NotificationService{
+type notificationService struct {
+	notificationRepository repository.NotificationRepository
+}
+
+func NewNotificationService(notificationRepository repository.NotificationRepository) NotificationService {
+	return &notificationService{
 		notificationRepository: notificationRepository,
 	}
 }
 
-func (s *NotificationService) Create(req *dto.NotificationRequest) (*dto.NotificationResponse, error) {
+func (s *notificationService) Create(req *dto.NotificationRequest) (*dto.NotificationResponse, error) {
 	notification := &entity.Notification{
-		Title:         req.Title,
-		Message:       req.Message,
-		Type:          req.Type,
-		UserID:        req.UserID,
-		IsRead:        req.IsRead,
-		ReferenceID:   req.ReferenceID,
-		ReferenceType: req.ReferenceType,
+		Title:    req.Title,
+		Message:  req.Message,
+		Type:     req.Type,
+		UserID:   req.UserID,
+		IsRead:   req.IsRead,
+		ChurchID: &req.ChurchID,
 	}
 
 	if err := s.notificationRepository.Create(notification); err != nil {
@@ -35,7 +47,7 @@ func (s *NotificationService) Create(req *dto.NotificationRequest) (*dto.Notific
 	return s.GetByID(notification.ID)
 }
 
-func (s *NotificationService) GetAll() ([]dto.NotificationResponse, error) {
+func (s *notificationService) GetAll() ([]dto.NotificationResponse, error) {
 	notifications, err := s.notificationRepository.GetAll()
 	if err != nil {
 		return nil, err
@@ -49,7 +61,7 @@ func (s *NotificationService) GetAll() ([]dto.NotificationResponse, error) {
 	return responses, nil
 }
 
-func (s *NotificationService) GetByID(id uuid.UUID) (*dto.NotificationResponse, error) {
+func (s *notificationService) GetByID(id uuid.UUID) (*dto.NotificationResponse, error) {
 	notification, err := s.notificationRepository.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -58,7 +70,7 @@ func (s *NotificationService) GetByID(id uuid.UUID) (*dto.NotificationResponse, 
 	return s.toResponse(notification), nil
 }
 
-func (s *NotificationService) GetByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error) {
+func (s *notificationService) GetByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error) {
 	notifications, err := s.notificationRepository.GetByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -72,7 +84,7 @@ func (s *NotificationService) GetByUserID(userID uuid.UUID) ([]dto.NotificationR
 	return responses, nil
 }
 
-func (s *NotificationService) GetUnreadByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error) {
+func (s *notificationService) GetUnreadByUserID(userID uuid.UUID) ([]dto.NotificationResponse, error) {
 	notifications, err := s.notificationRepository.GetUnreadByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -86,19 +98,17 @@ func (s *NotificationService) GetUnreadByUserID(userID uuid.UUID) ([]dto.Notific
 	return responses, nil
 }
 
-func (s *NotificationService) Update(id uuid.UUID, req *dto.NotificationRequest) (*dto.NotificationResponse, error) {
+func (s *notificationService) Update(id uuid.UUID, req *dto.NotificationRequest) (*dto.NotificationResponse, error) {
 	notification, err := s.notificationRepository.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
-
 	notification.Title = req.Title
 	notification.Message = req.Message
 	notification.Type = req.Type
 	notification.UserID = req.UserID
 	notification.IsRead = req.IsRead
-	notification.ReferenceID = req.ReferenceID
-	notification.ReferenceType = req.ReferenceType
+	notification.ChurchID = &req.ChurchID
 
 	if err := s.notificationRepository.Update(notification); err != nil {
 		return nil, err
@@ -107,33 +117,37 @@ func (s *NotificationService) Update(id uuid.UUID, req *dto.NotificationRequest)
 	return s.GetByID(id)
 }
 
-func (s *NotificationService) Delete(id uuid.UUID) error {
+func (s *notificationService) Delete(id uuid.UUID) error {
 	return s.notificationRepository.Delete(id)
 }
 
-func (s *NotificationService) MarkAsRead(id uuid.UUID) error {
+func (s *notificationService) MarkAsRead(id uuid.UUID) error {
 	return s.notificationRepository.MarkAsRead(id)
 }
 
-func (s *NotificationService) MarkAllAsRead(userID uuid.UUID) error {
+func (s *notificationService) MarkAllAsRead(userID uuid.UUID) error {
 	return s.notificationRepository.MarkAllAsRead(userID)
 }
 
-func (s *NotificationService) DeleteByUserID(userID uuid.UUID) error {
+func (s *notificationService) DeleteByUserID(userID uuid.UUID) error {
 	return s.notificationRepository.DeleteByUserID(userID)
 }
 
-func (s *NotificationService) toResponse(notification *entity.Notification) *dto.NotificationResponse {
+func (s *notificationService) toResponse(notification *entity.Notification) *dto.NotificationResponse {
+	var churchID uuid.UUID
+	if notification.ChurchID != nil {
+		churchID = *notification.ChurchID
+	}
+
 	return &dto.NotificationResponse{
-		ID:            notification.ID,
-		Title:         notification.Title,
-		Message:       notification.Message,
-		Type:          notification.Type,
-		UserID:        notification.UserID,
-		IsRead:        notification.IsRead,
-		ReferenceID:   notification.ReferenceID,
-		ReferenceType: notification.ReferenceType,
-		CreatedAt:     notification.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:     notification.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ID:        notification.ID,
+		Title:     notification.Title,
+		Message:   notification.Message,
+		Type:      notification.Type,
+		UserID:    notification.UserID,
+		IsRead:    notification.IsRead,
+		ChurchID:  churchID,
+		CreatedAt: notification.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt: notification.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

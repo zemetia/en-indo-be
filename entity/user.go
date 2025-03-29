@@ -7,15 +7,13 @@ import (
 )
 
 type User struct {
-	ID            uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	Email         string         `gorm:"type:varchar(100);unique;not null"`
-	Password      string         `gorm:"type:varchar(100);not null"`
-	ImageUrl      string         `json:"image_url"`
-	IsVerified    bool           `json:"is_verified"`
-	Churches      []Church       `gorm:"many2many:user_churches;"`
-	Roles         []Role         `gorm:"many2many:user_has_roles;"`
-	Departments   []Department   `gorm:"many2many:user_departments;"`
-	Notifications []Notification `gorm:"foreignKey:UserID"`
+	ID         uuid.UUID `gorm:"type:char(36);primary_key;unique" json:"id"`
+	Email      string    `gorm:"type:varchar(100);unique;not null"`
+	Password   string    `gorm:"type:varchar(100);not null"`
+	ImageUrl   string    `gorm:"type:text" json:"image_url"`
+	IsVerified bool      `gorm:"type:boolean;not null;default:false" json:"is_verified"`
+	PersonID   uuid.UUID `gorm:"type:char(36);not null;unique"`
+	Person     Person    `gorm:"foreignKey:PersonID"`
 
 	Timestamp
 }

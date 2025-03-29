@@ -8,24 +8,27 @@ import (
 )
 
 type ChurchService struct {
-	churchRepository *repository.ChurchRepository
+	churchRepository    repository.ChurchRepository
+	kabupatenRepository repository.KabupatenRepository
+	provinsiRepository  repository.ProvinsiRepository
 }
 
-func NewChurchService(churchRepository *repository.ChurchRepository) *ChurchService {
+func NewChurchService(churchRepository repository.ChurchRepository, kabupatenRepository repository.KabupatenRepository, provinsiRepository repository.ProvinsiRepository) *ChurchService {
 	return &ChurchService{
-		churchRepository: churchRepository,
+		churchRepository:    churchRepository,
+		kabupatenRepository: kabupatenRepository,
+		provinsiRepository:  provinsiRepository,
 	}
 }
 
 func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, error) {
 	church := &entity.Church{
-		Name:       req.Name,
-		Address:    req.Address,
-		Phone:      req.Phone,
-		Email:      req.Email,
-		Website:    req.Website,
-		CityID:     req.CityID,
-		ProvinceID: req.ProvinceID,
+		Name:        req.Name,
+		Address:     req.Address,
+		Phone:       req.Phone,
+		Email:       req.Email,
+		Website:     req.Website,
+		KabupatenID: req.KabupatenID,
 	}
 
 	if err := s.churchRepository.Create(church); err != nil {
@@ -58,8 +61,8 @@ func (s *ChurchService) GetByID(id uuid.UUID) (*dto.ChurchResponse, error) {
 	return s.toResponse(church), nil
 }
 
-func (s *ChurchService) GetByCityID(cityID uuid.UUID) ([]dto.ChurchResponse, error) {
-	churches, err := s.churchRepository.GetByCityID(cityID)
+func (s *ChurchService) GetByKabupatenID(kabupatenID uuid.UUID) ([]dto.ChurchResponse, error) {
+	churches, err := s.churchRepository.GetByKabupatenID(kabupatenID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +75,8 @@ func (s *ChurchService) GetByCityID(cityID uuid.UUID) ([]dto.ChurchResponse, err
 	return responses, nil
 }
 
-func (s *ChurchService) GetByProvinceID(provinceID uuid.UUID) ([]dto.ChurchResponse, error) {
-	churches, err := s.churchRepository.GetByProvinceID(provinceID)
+func (s *ChurchService) GetByProvinsiID(provinsiID uuid.UUID) ([]dto.ChurchResponse, error) {
+	churches, err := s.churchRepository.GetByProvinsiID(provinsiID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +100,7 @@ func (s *ChurchService) Update(id uuid.UUID, req *dto.ChurchRequest) (*dto.Churc
 	church.Phone = req.Phone
 	church.Email = req.Email
 	church.Website = req.Website
-	church.CityID = req.CityID
-	church.ProvinceID = req.ProvinceID
+	church.KabupatenID = req.KabupatenID
 
 	if err := s.churchRepository.Update(church); err != nil {
 		return nil, err
@@ -112,16 +114,32 @@ func (s *ChurchService) Delete(id uuid.UUID) error {
 }
 
 func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
+	// Get kabupaten name
+	var kabupatenName string
+	kabupaten, err := s.kabupatenRepository.GetByID(church.KabupatenID)
+	if err == nil {
+		kabupatenName = kabupaten.Name
+	}
+
+	// Get provinsi name
+	var provinsiName string
+	provinsi, err := s.provinsiRepository.GetByID(church.KabupatenID)
+	if err == nil {
+		provinsiName = provinsi.Name
+	}
+
 	return &dto.ChurchResponse{
-		ID:         church.ID,
-		Name:       church.Name,
-		Address:    church.Address,
-		Phone:      church.Phone,
-		Email:      church.Email,
-		Website:    church.Website,
-		CityID:     church.CityID,
-		ProvinceID: church.ProvinceID,
-		CreatedAt:  church.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:  church.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ID:          church.ID,
+		Name:        church.Name,
+		Address:     church.Address,
+		Phone:       church.Phone,
+		Email:       church.Email,
+		Website:     church.Website,
+		KabupatenID: church.KabupatenID,
+		Kabupaten:   kabupatenName,
+		ProvinsiID:  church.Kabupaten.ProvinsiID,
+		Provinsi:    provinsiName,
+		CreatedAt:   church.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:   church.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

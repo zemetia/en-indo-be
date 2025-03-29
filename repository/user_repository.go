@@ -3,31 +3,78 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/zemetia/en-indo-be/dto"
 	"github.com/zemetia/en-indo-be/entity"
 	"gorm.io/gorm"
 )
 
-type (
-	UserRepository interface {
-		RegisterUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error)
-		GetAllUserWithPagination(ctx context.Context, tx *gorm.DB, req dto.PaginationRequest) (dto.GetAllUserRepositoryResponse, error)
-		GetUserById(ctx context.Context, tx *gorm.DB, userId string) (entity.User, error)
-		GetUserByEmail(ctx context.Context, tx *gorm.DB, email string) (entity.User, error)
-		CheckEmail(ctx context.Context, tx *gorm.DB, email string) (entity.User, bool, error)
-		UpdateUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error)
-		DeleteUser(ctx context.Context, tx *gorm.DB, userId string) error
-	}
+type UserRepository interface {
+	Create(ctx context.Context, user *entity.User) error
+	GetAll(ctx context.Context) ([]entity.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error)
+	GetByEmail(ctx context.Context, email string) (*entity.User, error)
+	GetByPersonID(ctx context.Context, personID uuid.UUID) (*entity.User, error)
+	Update(ctx context.Context, user *entity.User) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	UpdateVerificationStatus(ctx context.Context, id uuid.UUID, isVerified bool) error
+	RegisterUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error)
+	GetAllUserWithPagination(ctx context.Context, tx *gorm.DB, req dto.PaginationRequest) (dto.GetAllUserRepositoryResponse, error)
+	GetUserById(ctx context.Context, tx *gorm.DB, userId string) (entity.User, error)
+	CheckEmail(ctx context.Context, tx *gorm.DB, email string) (entity.User, bool, error)
+}
 
-	userRepository struct {
-		db *gorm.DB
-	}
-)
+type userRepository struct {
+	db *gorm.DB
+}
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{
 		db: db,
 	}
+}
+
+func (r *userRepository) Create(ctx context.Context, user *entity.User) error {
+	return r.db.WithContext(ctx).Create(user).Error
+}
+func (r *userRepository) GetAll(ctx context.Context) ([]entity.User, error) {
+	var users []entity.User
+
+	if err := r.db.WithContext(ctx).Preload("Person").Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+	var user entity.User
+	err := r.db.WithContext(ctx).Preload("Person").First(&user, "id = ?", id).Error
+	return &user, err
+}
+
+func (r *userRepository) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
+	var user entity.User
+	err := r.db.WithContext(ctx).Preload("Person").First(&user, "email = ?", email).Error
+	return &user, err
+}
+
+func (r *userRepository) GetByPersonID(ctx context.Context, personID uuid.UUID) (*entity.User, error) {
+	var user entity.User
+	err := r.db.WithContext(ctx).Preload("Person").First(&user, "person_id = ?", personID).Error
+	return &user, err
+}
+
+func (r *userRepository) Update(ctx context.Context, user *entity.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
+}
+
+func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&entity.User{}, "id = ?", id).Error
+}
+
+func (r *userRepository) UpdateVerificationStatus(ctx context.Context, id uuid.UUID, isVerified bool) error {
+	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", id).Update("is_verified", isVerified).Error
 }
 
 func (r *userRepository) RegisterUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error) {
@@ -91,19 +138,6 @@ func (r *userRepository) GetUserById(ctx context.Context, tx *gorm.DB, userId st
 	return user, nil
 }
 
-func (r *userRepository) GetUserByEmail(ctx context.Context, tx *gorm.DB, email string) (entity.User, error) {
-	if tx == nil {
-		tx = r.db
-	}
-
-	var user entity.User
-	if err := tx.WithContext(ctx).Where("email = ?", email).Take(&user).Error; err != nil {
-		return entity.User{}, err
-	}
-
-	return user, nil
-}
-
 func (r *userRepository) CheckEmail(ctx context.Context, tx *gorm.DB, email string) (entity.User, bool, error) {
 	if tx == nil {
 		tx = r.db
@@ -115,28 +149,4 @@ func (r *userRepository) CheckEmail(ctx context.Context, tx *gorm.DB, email stri
 	}
 
 	return user, true, nil
-}
-
-func (r *userRepository) UpdateUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error) {
-	if tx == nil {
-		tx = r.db
-	}
-
-	if err := tx.WithContext(ctx).Updates(&user).Error; err != nil {
-		return entity.User{}, err
-	}
-
-	return user, nil
-}
-
-func (r *userRepository) DeleteUser(ctx context.Context, tx *gorm.DB, userId string) error {
-	if tx == nil {
-		tx = r.db
-	}
-
-	if err := tx.WithContext(ctx).Delete(&entity.User{}, "id = ?", userId).Error; err != nil {
-		return err
-	}
-
-	return nil
 }

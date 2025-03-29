@@ -1,25 +1,46 @@
 package service
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/zemetia/en-indo-be/dto"
 	"github.com/zemetia/en-indo-be/entity"
 	"github.com/zemetia/en-indo-be/repository"
 )
 
-type PersonService struct {
-	personRepo *repository.PersonRepository
+type PersonService interface {
+	Create(ctx context.Context, req *dto.PersonRequest) (*dto.PersonResponse, error)
+	GetAll(ctx context.Context) ([]dto.PersonResponse, error)
+	Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.PersonResponse, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*dto.PersonResponse, error)
+	GetByChurchID(ctx context.Context, churchID uuid.UUID) ([]dto.PersonResponse, error)
+	GetByKabupatenID(ctx context.Context, kabupatenID uuid.UUID) ([]dto.PersonResponse, error)
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*dto.PersonResponse, error)
+	Update(ctx context.Context, id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
+	RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
 }
 
-func NewPersonService(personRepo *repository.PersonRepository) *PersonService {
-	return &PersonService{
-		personRepo: personRepo,
+type personService struct {
+	personRepository    repository.PersonRepository
+	churchRepository    repository.ChurchRepository
+	kabupatenRepository repository.KabupatenRepository
+	lifeGroupRepository repository.LifeGroupRepository
+}
+
+func NewPersonService(personRepository repository.PersonRepository, churchRepository repository.ChurchRepository, kabupatenRepository repository.KabupatenRepository, lifeGroupRepository repository.LifeGroupRepository) PersonService {
+	return &personService{
+		personRepository:    personRepository,
+		churchRepository:    churchRepository,
+		kabupatenRepository: kabupatenRepository,
+		lifeGroupRepository: lifeGroupRepository,
 	}
 }
 
-func (s *PersonService) Create(req *dto.PersonRequest) (*dto.PersonResponse, error) {
+func (s *personService) Create(ctx context.Context, req *dto.PersonRequest) (*dto.PersonResponse, error) {
 	person := &entity.Person{
-		ID:                uuid.New(),
 		Nama:              req.Nama,
 		NamaLain:          req.NamaLain,
 		Gender:            req.Gender,
@@ -27,31 +48,40 @@ func (s *PersonService) Create(req *dto.PersonRequest) (*dto.PersonResponse, err
 		TanggalLahir:      req.TanggalLahir,
 		FaseHidup:         req.FaseHidup,
 		StatusPerkawinan:  req.StatusPerkawinan,
-		Pasangan:          req.Pasangan,
+		NamaPasangan:      req.NamaPasangan,
+		PasanganID:        req.PasanganID,
 		TanggalPerkawinan: req.TanggalPerkawinan,
+		Alamat:            req.Alamat,
 		NomorTelepon:      req.NomorTelepon,
 		Email:             req.Email,
-		Gereja:            req.Gereja,
 		Ayah:              req.Ayah,
 		Ibu:               req.Ibu,
 		Kerinduan:         req.Kerinduan,
 		KomitmenBerjemaat: req.KomitmenBerjemaat,
-		DateAdded:         req.DateAdded,
 		Status:            req.Status,
-		TagListID:         req.TagListID,
 		KodeJemaat:        req.KodeJemaat,
 		ChurchID:          req.ChurchID,
+		KabupatenID:       req.KabupatenID,
 	}
 
-	if err := s.personRepo.Create(person); err != nil {
+	if err := s.personRepository.Create(ctx, person); err != nil {
 		return nil, err
 	}
 
-	return s.toResponse(person), nil
+	// Tambahkan ke LifeGroup jika ada
+	if len(req.LifeGroupIDs) > 0 {
+		for _, lifeGroupID := range req.LifeGroupIDs {
+			if err := s.personRepository.AddToLifeGroup(ctx, person.ID, lifeGroupID); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return s.GetByID(ctx, person.ID)
 }
 
-func (s *PersonService) GetAll() ([]dto.PersonResponse, error) {
-	persons, err := s.personRepo.GetAll()
+func (s *personService) GetAll(ctx context.Context) ([]dto.PersonResponse, error) {
+	persons, err := s.personRepository.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +94,22 @@ func (s *PersonService) GetAll() ([]dto.PersonResponse, error) {
 	return responses, nil
 }
 
-func (s *PersonService) GetByID(id uuid.UUID) (*dto.PersonResponse, error) {
-	person, err := s.personRepo.GetByID(id)
+func (s *personService) Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.PersonResponse, error) {
+	persons, err := s.personRepository.Search(ctx, search)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.PersonResponse
+	for _, person := range persons {
+		responses = append(responses, *s.toResponse(&person))
+	}
+
+	return responses, nil
+}
+
+func (s *personService) GetByID(ctx context.Context, id uuid.UUID) (*dto.PersonResponse, error) {
+	person, err := s.personRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +117,45 @@ func (s *PersonService) GetByID(id uuid.UUID) (*dto.PersonResponse, error) {
 	return s.toResponse(person), nil
 }
 
-func (s *PersonService) Update(id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error) {
-	person, err := s.personRepo.GetByID(id)
+func (s *personService) GetByChurchID(ctx context.Context, churchID uuid.UUID) ([]dto.PersonResponse, error) {
+	persons, err := s.personRepository.GetByChurchID(ctx, churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.PersonResponse
+	for _, person := range persons {
+		responses = append(responses, *s.toResponse(&person))
+	}
+
+	return responses, nil
+}
+
+func (s *personService) GetByKabupatenID(ctx context.Context, kabupatenID uuid.UUID) ([]dto.PersonResponse, error) {
+	persons, err := s.personRepository.GetByKabupatenID(ctx, kabupatenID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.PersonResponse
+	for _, person := range persons {
+		responses = append(responses, *s.toResponse(&person))
+	}
+
+	return responses, nil
+}
+
+func (s *personService) GetByUserID(ctx context.Context, userID uuid.UUID) (*dto.PersonResponse, error) {
+	person, err := s.personRepository.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.toResponse(person), nil
+}
+
+func (s *personService) Update(ctx context.Context, id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error) {
+	person, err := s.personRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -86,74 +167,101 @@ func (s *PersonService) Update(id uuid.UUID, req *dto.PersonRequest) (*dto.Perso
 	person.TanggalLahir = req.TanggalLahir
 	person.FaseHidup = req.FaseHidup
 	person.StatusPerkawinan = req.StatusPerkawinan
-	person.Pasangan = req.Pasangan
+	person.NamaPasangan = req.NamaPasangan
+	person.PasanganID = req.PasanganID
 	person.TanggalPerkawinan = req.TanggalPerkawinan
+	person.Alamat = req.Alamat
 	person.NomorTelepon = req.NomorTelepon
 	person.Email = req.Email
-	person.Gereja = req.Gereja
 	person.Ayah = req.Ayah
 	person.Ibu = req.Ibu
 	person.Kerinduan = req.Kerinduan
 	person.KomitmenBerjemaat = req.KomitmenBerjemaat
-	person.DateAdded = req.DateAdded
 	person.Status = req.Status
-	person.TagListID = req.TagListID
 	person.KodeJemaat = req.KodeJemaat
 	person.ChurchID = req.ChurchID
+	person.KabupatenID = req.KabupatenID
 
-	if err := s.personRepo.Update(person); err != nil {
+	if err := s.personRepository.Update(ctx, person); err != nil {
 		return nil, err
 	}
 
-	return s.toResponse(person), nil
+	return s.GetByID(ctx, id)
 }
 
-func (s *PersonService) Delete(id uuid.UUID) error {
-	return s.personRepo.Delete(id)
+func (s *personService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.personRepository.Delete(ctx, id)
 }
 
-func (s *PersonService) GetByChurchID(churchID uuid.UUID) ([]dto.PersonResponse, error) {
-	persons, err := s.personRepo.GetByChurchID(churchID)
-	if err != nil {
-		return nil, err
+func (s *personService) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+	return s.personRepository.AddToLifeGroup(ctx, personID, lifeGroupID)
+}
+
+func (s *personService) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+	return s.personRepository.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
+}
+
+func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
+	// Format dates
+	tanggalLahir := ""
+	if !person.TanggalLahir.IsZero() {
+		tanggalLahir = person.TanggalLahir.Format("2006-01-02")
 	}
 
-	var responses []dto.PersonResponse
-	for _, person := range persons {
-		responses = append(responses, *s.toResponse(&person))
+	tanggalPerkawinan := ""
+	if !person.TanggalPerkawinan.IsZero() {
+		tanggalPerkawinan = person.TanggalPerkawinan.Format("2006-01-02")
 	}
 
-	return responses, nil
-}
+	// Get church name
+	var churchName string
+	church, err := s.churchRepository.GetByID(person.ChurchID)
+	if err == nil {
+		churchName = church.Name
+	}
 
-func (s *PersonService) toResponse(person *entity.Person) *dto.PersonResponse {
+	// Get kabupaten name
+	var kabupatenName string
+	kabupaten, err := s.kabupatenRepository.GetByID(person.KabupatenID)
+	if err == nil {
+		kabupatenName = kabupaten.Name
+	}
+
+	// Get lifegroups
+	var lifeGroups []dto.LifeGroupSimpleResponse
+	for _, lg := range person.LifeGroups {
+		lifeGroups = append(lifeGroups, dto.LifeGroupSimpleResponse{
+			ID:   lg.ID,
+			Name: lg.Name,
+		})
+	}
+
 	return &dto.PersonResponse{
 		ID:                person.ID,
-		PersonID:          person.PersonID,
 		Nama:              person.Nama,
 		NamaLain:          person.NamaLain,
 		Gender:            person.Gender,
 		TempatLahir:       person.TempatLahir,
-		TanggalLahir:      person.TanggalLahir,
+		TanggalLahir:      tanggalLahir,
 		FaseHidup:         person.FaseHidup,
 		StatusPerkawinan:  person.StatusPerkawinan,
-		Pasangan:          person.Pasangan,
-		TanggalPerkawinan: person.TanggalPerkawinan,
+		NamaPasangan:      person.NamaPasangan,
+		PasanganID:        person.PasanganID,
+		TanggalPerkawinan: tanggalPerkawinan,
+		Alamat:            person.Alamat,
 		NomorTelepon:      person.NomorTelepon,
 		Email:             person.Email,
-		Gereja:            person.Gereja,
 		Ayah:              person.Ayah,
 		Ibu:               person.Ibu,
 		Kerinduan:         person.Kerinduan,
 		KomitmenBerjemaat: person.KomitmenBerjemaat,
-		DateAdded:         person.DateAdded,
 		Status:            person.Status,
-		TagListID:         person.TagListID,
 		KodeJemaat:        person.KodeJemaat,
 		ChurchID:          person.ChurchID,
-		Church:            person.Church,
-		UserID:            person.UserID,
-		User:              person.User,
+		Church:            churchName,
+		KabupatenID:       person.KabupatenID,
+		Kabupaten:         kabupatenName,
+		LifeGroups:        lifeGroups,
 		CreatedAt:         person.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:         person.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}

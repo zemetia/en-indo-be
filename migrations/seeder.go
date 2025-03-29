@@ -14,15 +14,7 @@ func Seeder(db *gorm.DB) error {
 		return err
 	}
 
-	if err := seeds.RolePermissionSeeder(db); err != nil {
-		return err
-	}
-
 	if err := seeds.DepartmentSeeder(db); err != nil {
-		return err
-	}
-
-	if err := seeds.LifeGroupSeeder(db); err != nil {
 		return err
 	}
 

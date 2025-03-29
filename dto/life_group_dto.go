@@ -41,3 +41,9 @@ type UpdateMembersRequest struct {
 type UpdatePersonsRequest struct {
 	PersonIDs []uuid.UUID `json:"person_ids" binding:"required"`
 }
+
+type LifeGroupSimpleResponse struct {
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	LeaderName string    `json:"leader_name"`
+}

@@ -7,4 +7,10 @@ import (
 
 func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	User(server, injector)
+	Person(server, injector)
+	// Church(server, injector)
+	// Provinsi(server, injector)
+	Kabupaten(server, injector)
+	// LifeGroup(server, injector)
+	// Department(server, injector)
 }
