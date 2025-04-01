@@ -27,7 +27,6 @@ func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, err
 		Address:     req.Address,
 		Phone:       req.Phone,
 		Email:       req.Email,
-		Website:     req.Website,
 		KabupatenID: req.KabupatenID,
 	}
 
@@ -75,8 +74,8 @@ func (s *ChurchService) GetByKabupatenID(kabupatenID uuid.UUID) ([]dto.ChurchRes
 	return responses, nil
 }
 
-func (s *ChurchService) GetByProvinsiID(provinsiID uuid.UUID) ([]dto.ChurchResponse, error) {
-	churches, err := s.churchRepository.GetByProvinsiID(provinsiID)
+func (s *ChurchService) GetByProvinsiID(provinsiId uuid.UUID) ([]dto.ChurchResponse, error) {
+	churches, err := s.churchRepository.GetByProvinsiID(provinsiId)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,6 @@ func (s *ChurchService) Update(id uuid.UUID, req *dto.ChurchRequest) (*dto.Churc
 	church.Address = req.Address
 	church.Phone = req.Phone
 	church.Email = req.Email
-	church.Website = req.Website
 	church.KabupatenID = req.KabupatenID
 
 	if err := s.churchRepository.Update(church); err != nil {
@@ -134,7 +132,6 @@ func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
 		Address:     church.Address,
 		Phone:       church.Phone,
 		Email:       church.Email,
-		Website:     church.Website,
 		KabupatenID: church.KabupatenID,
 		Kabupaten:   kabupatenName,
 		ProvinsiID:  church.Kabupaten.ProvinsiID,

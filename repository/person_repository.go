@@ -42,8 +42,6 @@ func (r *personRepository) GetAll(ctx context.Context) ([]entity.Person, error) 
 	err := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten").
 		Find(&persons).Error
 	return persons, err
@@ -54,8 +52,6 @@ func (r *personRepository) Search(ctx context.Context, search *dto.PersonSearchD
 	query := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten")
 
 	if search.Name != nil {
@@ -83,8 +79,6 @@ func (r *personRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.P
 	err := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten").
 		First(&person, "id = ?", id).Error
 	return &person, err
@@ -95,8 +89,6 @@ func (r *personRepository) GetByChurchID(ctx context.Context, churchID uuid.UUID
 	err := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten").
 		Where("church_id = ?", churchID).Find(&persons).Error
 	return persons, err
@@ -107,8 +99,6 @@ func (r *personRepository) GetByKabupatenID(ctx context.Context, kabupatenID uui
 	err := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten").
 		Where("kabupaten_id = ?", kabupatenID).Find(&persons).Error
 	return persons, err
@@ -119,8 +109,6 @@ func (r *personRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*
 	err := r.db.WithContext(ctx).
 		Preload("Pasangan").
 		Preload("Church").
-		Preload("LifeGroups").
-		Preload("User").
 		Preload("Kabupaten").
 		Where("user_id = ?", userID).First(&person).Error
 	return &person, err

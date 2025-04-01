@@ -16,6 +16,9 @@ package service
 // 	UpdateLeader(id uuid.UUID, req *dto.UpdateLeaderRequest) (*dto.LifeGroupResponse, error)
 // 	UpdateMembers(id uuid.UUID, req *dto.UpdateMembersRequest) (*dto.LifeGroupResponse, error)
 // 	GetByChurchID(churchID uuid.UUID) ([]dto.LifeGroupResponse, error)
+
+// AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
+// RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
 // }
 
 // type lifeGroupService struct {
@@ -180,6 +183,14 @@ package service
 // 	}
 
 // 	return responses, nil
+// }
+
+// func (s *lifeGroupService) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+// 	return s.personRepository.AddToLifeGroup(ctx, personID, lifeGroupID)
+// }
+
+// func (s *lifeGroupService) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+// 	return s.personRepository.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
 // }
 
 // func (s *lifeGroupService) toResponse(lifeGroup *entity.LifeGroup) *dto.LifeGroupResponse {

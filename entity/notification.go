@@ -12,5 +12,6 @@ type Notification struct {
 	User     User       `gorm:"foreignKey:UserID" json:"user"`
 	ChurchID *uuid.UUID `gorm:"type:char(36);null"`  // optional nullable
 	Church   *Church    `gorm:"foreignKey:ChurchID"` // optional nullable
+
 	Timestamp
 }

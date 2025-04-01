@@ -6,21 +6,40 @@ import (
 )
 
 func Seeder(db *gorm.DB) error {
-	if err := seeds.ChurchSeeder(db); err != nil {
+
+	// if err := seeds.ListUserSeeder(db); err != nil {
+	// 	return err
+	// }
+
+	// db.Exec("SET FOREIGN_KEY_CHECKS = 0;")
+
+	if err := seeds.ListProvinsiSeeder(db); err != nil {
 		return err
 	}
 
-	if err := seeds.ListUserSeeder(db); err != nil {
+	if err := seeds.ListKabupatenSeeder(db); err != nil {
 		return err
 	}
 
-	if err := seeds.DepartmentSeeder(db); err != nil {
+	if err := seeds.ListChurchSeeder(db); err != nil {
 		return err
 	}
 
-	if err := seeds.NotificationSeeder(db); err != nil {
+	if err := seeds.ListPersonSeeder(db); err != nil {
 		return err
 	}
+
+	// if err := seeds.ListUserSeeder(db); err != nil {
+	// 	return err
+	// }
+
+	// if err := seeds.DepartmentSeeder(db); err != nil {
+	// 	return err
+	// }
+
+	// if err := seeds.NotificationSeeder(db); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

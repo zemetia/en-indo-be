@@ -121,8 +121,9 @@ type (
 	}
 
 	UserLoginResponse struct {
-		Token string `json:"token"`
-		Email string `json:"email"`
+		Token  string               `json:"token"`
+		Email  string               `json:"email"`
+		Person SimplePersonResponse `json:"person"`
 	}
 
 	UpdateStatusIsVerifiedRequest struct {

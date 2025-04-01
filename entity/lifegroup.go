@@ -12,5 +12,6 @@ type LifeGroup struct {
 	LeaderID     uuid.UUID `gorm:"type:char(36);not null" json:"leader_id"`
 	Leader       User      `gorm:"foreignKey:LeaderID" json:"leader"`
 	Persons      []Person  `gorm:"many2many:life_group_persons;" json:"persons"`
+
 	Timestamp
 }

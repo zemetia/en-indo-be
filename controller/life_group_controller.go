@@ -179,3 +179,47 @@ package controller
 
 // 	ctx.JSON(http.StatusOK, response)
 // }
+
+// func (c *personController) AddToLifeGroup(ctx *gin.Context) {
+// 	personID, err := uuid.Parse(ctx.Param("id"))
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
+// 		return
+// 	}
+
+// 	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
+// 		return
+// 	}
+
+// 	err = c.personService.AddToLifeGroup(ctx, personID, lifeGroupID)
+// 	if err != nil {
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	ctx.JSON(http.StatusOK, gin.H{"message": "Person added to life group successfully"})
+// }
+
+// func (c *personController) RemoveFromLifeGroup(ctx *gin.Context) {
+// 	personID, err := uuid.Parse(ctx.Param("id"))
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
+// 		return
+// 	}
+
+// 	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
+// 		return
+// 	}
+
+// 	err = c.personService.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
+// 	if err != nil {
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	ctx.JSON(http.StatusOK, gin.H{"message": "Person removed from life group successfully"})
+// }

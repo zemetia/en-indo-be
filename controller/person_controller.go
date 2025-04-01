@@ -14,13 +14,13 @@ type PersonController interface {
 	Create(ctx *gin.Context)
 	GetAll(ctx *gin.Context)
 	GetByID(ctx *gin.Context)
-	GetByChurchID(ctx *gin.Context)
-	GetByKabupatenID(ctx *gin.Context)
-	GetByUserID(ctx *gin.Context)
+	// GetByChurchID(ctx *gin.Context)
+	// GetByKabupatenID(ctx *gin.Context)
+	// GetByUserID(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
-	AddToLifeGroup(ctx *gin.Context)
-	RemoveFromLifeGroup(ctx *gin.Context)
+	// AddToLifeGroup(ctx *gin.Context)
+	// RemoveFromLifeGroup(ctx *gin.Context)
 }
 
 type personController struct {
@@ -117,38 +117,6 @@ func (c *personController) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *personController) GetByChurchID(ctx *gin.Context) {
-	churchID, err := uuid.Parse(ctx.Param("church_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid church ID format"})
-		return
-	}
-
-	res, err := c.personService.GetByChurchID(ctx, churchID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, res)
-}
-
-func (c *personController) GetByKabupatenID(ctx *gin.Context) {
-	kabupatenID, err := uuid.Parse(ctx.Param("kabupaten_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid kabupaten ID format"})
-		return
-	}
-
-	res, err := c.personService.GetByKabupatenID(ctx, kabupatenID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, res)
-}
-
 func (c *personController) GetByUserID(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("user_id"))
 	if err != nil {
@@ -201,48 +169,4 @@ func (c *personController) Delete(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Person deleted successfully"})
-}
-
-func (c *personController) AddToLifeGroup(ctx *gin.Context) {
-	personID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
-		return
-	}
-
-	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
-		return
-	}
-
-	err = c.personService.AddToLifeGroup(ctx, personID, lifeGroupID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Person added to life group successfully"})
-}
-
-func (c *personController) RemoveFromLifeGroup(ctx *gin.Context) {
-	personID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
-		return
-	}
-
-	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
-		return
-	}
-
-	err = c.personService.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Person removed from life group successfully"})
 }

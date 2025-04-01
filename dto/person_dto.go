@@ -59,8 +59,9 @@ type PersonResponse struct {
 	KabupatenID       uint                      `json:"kabupaten_id"`
 	Kabupaten         string                    `json:"kabupaten"`
 	LifeGroups        []LifeGroupSimpleResponse `json:"life_groups"`
-	CreatedAt         string                    `json:"created_at"`
-	UpdatedAt         string                    `json:"updated_at"`
+	// Pelayanan         []PelayananSimpleResponse `json:"pelayanan"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type PersonSearchDto struct {
@@ -68,4 +69,21 @@ type PersonSearchDto struct {
 	ChurchID    *uuid.UUID `json:"church_id" form:"church_id"`
 	KabupatenID *uint      `json:"kabupaten_id" form:"kabupaten_id"`
 	UserID      *uuid.UUID `json:"user_id" form:"user_id"`
+}
+
+type SimplePersonResponse struct {
+	ID           uuid.UUID `json:"id"`
+	Nama         string    `json:"nama"`
+	Gender       string    `json:"gender"`
+	Alamat       string    `json:"alamat"`
+	Church       string    `json:"church"`
+	TanggalLahir string    `json:"tanggal_lahir"`
+	Email        string    `json:"email"`
+	NomorTelepon string    `json:"nomor_telepon"`
+	IsAktif      bool      `json:"is_aktif"`
+}
+
+type LoginPersonResponse struct {
+	Nama string `json:"nama"`
+	// Pelayanan
 }

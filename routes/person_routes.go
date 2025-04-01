@@ -22,8 +22,5 @@ func Person(route *gin.Engine, injector *do.Injector) {
 		routes.PUT("/:id", middleware.Authenticate(jwtService), personController.Update)
 		routes.DELETE("/:id", middleware.Authenticate(jwtService), personController.Delete)
 
-		// Manajemen LifeGroup
-		routes.POST("/:id/life-group/:life_group_id", middleware.Authenticate(jwtService), personController.AddToLifeGroup)
-		routes.DELETE("/:id/life-group/:life_group_id", middleware.Authenticate(jwtService), personController.RemoveFromLifeGroup)
 	}
 }

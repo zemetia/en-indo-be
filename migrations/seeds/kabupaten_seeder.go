@@ -2,6 +2,7 @@ package seeds
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -37,7 +38,7 @@ func ListKabupatenSeeder(db *gorm.DB) error {
 		// }
 
 		if err := db.Create(&data).Error; err != nil {
-			return err
+			return fmt.Errorf("error creating kabupaten: %s | Error: %v", data.Name, err)
 		}
 
 	}

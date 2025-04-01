@@ -25,5 +25,9 @@ package routes
 // 		lifeGroup.PUT("/:id/members", lifeGroupController.UpdateMembers)
 // 		lifeGroup.PUT("/:id/persons", lifeGroupController.UpdatePersons)
 // 		lifeGroup.GET("/church/:church_id", lifeGroupController.GetByChurchID)
+
+// 		// Manajemen LifeGroup
+// 		routes.POST("/:id/life-group/:life_group_id", personController.AddToLifeGroup)
+// 		routes.DELETE("/:id/life-group/:life_group_id", personController.RemoveFromLifeGroup)
 // 	}
 // }

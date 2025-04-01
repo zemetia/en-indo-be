@@ -11,16 +11,14 @@ import (
 
 type PersonService interface {
 	Create(ctx context.Context, req *dto.PersonRequest) (*dto.PersonResponse, error)
-	GetAll(ctx context.Context) ([]dto.PersonResponse, error)
-	Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.PersonResponse, error)
+	GetAll(ctx context.Context) ([]dto.SimplePersonResponse, error)
+	Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.SimplePersonResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.PersonResponse, error)
 	GetByChurchID(ctx context.Context, churchID uuid.UUID) ([]dto.PersonResponse, error)
 	GetByKabupatenID(ctx context.Context, kabupatenID uuid.UUID) ([]dto.PersonResponse, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*dto.PersonResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
-	RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
 }
 
 type personService struct {
@@ -80,29 +78,51 @@ func (s *personService) Create(ctx context.Context, req *dto.PersonRequest) (*dt
 	return s.GetByID(ctx, person.ID)
 }
 
-func (s *personService) GetAll(ctx context.Context) ([]dto.PersonResponse, error) {
+func (s *personService) GetAll(ctx context.Context) ([]dto.SimplePersonResponse, error) {
 	persons, err := s.personRepository.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var responses []dto.PersonResponse
+	var responses []dto.SimplePersonResponse
 	for _, person := range persons {
-		responses = append(responses, *s.toResponse(&person))
+		responses = append(responses, dto.SimplePersonResponse{
+			ID:           person.ID,
+			Nama:         person.Nama,
+			Gender:       person.Gender,
+			Alamat:       person.Alamat,
+			Church:       person.Church.Name,
+			TanggalLahir: person.TanggalLahir.Format("2006-01-02"),
+			Email:        person.Email,
+			NomorTelepon: person.NomorTelepon,
+			IsAktif:      person.IsAktif,
+			// responses = append(responses, *s.toResponse(&person))
+		})
 	}
 
 	return responses, nil
 }
 
-func (s *personService) Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.PersonResponse, error) {
+func (s *personService) Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.SimplePersonResponse, error) {
 	persons, err := s.personRepository.Search(ctx, search)
 	if err != nil {
 		return nil, err
 	}
 
-	var responses []dto.PersonResponse
+	var responses []dto.SimplePersonResponse
 	for _, person := range persons {
-		responses = append(responses, *s.toResponse(&person))
+		responses = append(responses, dto.SimplePersonResponse{
+			ID:           person.ID,
+			Nama:         person.Nama,
+			Gender:       person.Gender,
+			Alamat:       person.Alamat,
+			Church:       person.Church.Name,
+			TanggalLahir: person.TanggalLahir.Format("2006-01-02"),
+			Email:        person.Email,
+			NomorTelepon: person.NomorTelepon,
+			IsAktif:      person.IsAktif,
+			// responses = append(responses, *s.toResponse(&person))
+		})
 	}
 
 	return responses, nil
@@ -193,14 +213,6 @@ func (s *personService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.personRepository.Delete(ctx, id)
 }
 
-func (s *personService) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	return s.personRepository.AddToLifeGroup(ctx, personID, lifeGroupID)
-}
-
-func (s *personService) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	return s.personRepository.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
-}
-
 func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 	// Format dates
 	tanggalLahir := ""
@@ -211,20 +223,6 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 	tanggalPerkawinan := ""
 	if !person.TanggalPerkawinan.IsZero() {
 		tanggalPerkawinan = person.TanggalPerkawinan.Format("2006-01-02")
-	}
-
-	// Get church name
-	var churchName string
-	church, err := s.churchRepository.GetByID(person.ChurchID)
-	if err == nil {
-		churchName = church.Name
-	}
-
-	// Get kabupaten name
-	var kabupatenName string
-	kabupaten, err := s.kabupatenRepository.GetByID(person.KabupatenID)
-	if err == nil {
-		kabupatenName = kabupaten.Name
 	}
 
 	// Get lifegroups
@@ -258,9 +256,9 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 		Status:            person.Status,
 		KodeJemaat:        person.KodeJemaat,
 		ChurchID:          person.ChurchID,
-		Church:            churchName,
+		Church:            person.Church.Name,
 		KabupatenID:       person.KabupatenID,
-		Kabupaten:         kabupatenName,
+		Kabupaten:         person.Kabupaten.Name,
 		LifeGroups:        lifeGroups,
 		CreatedAt:         person.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:         person.UpdatedAt.Format("2006-01-02 15:04:05"),

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/zemetia/en-indo-be/entity"
 	"gorm.io/gorm"
@@ -14,6 +16,8 @@ type LifeGroupRepository interface {
 	Delete(id uuid.UUID) error
 	UpdateLeader(id uuid.UUID, leaderID uuid.UUID) error
 	UpdateMembers(id uuid.UUID, memberIDs []uuid.UUID) error
+	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
+	RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
 }
 
 type lifeGroupRepository struct {
@@ -90,4 +94,32 @@ func (r *lifeGroupRepository) GetByChurchID(churchID uuid.UUID) ([]entity.LifeGr
 		Where("church_id = ?", churchID).
 		Find(&lifeGroups).Error
 	return lifeGroups, err
+}
+
+func (r *lifeGroupRepository) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+	var person entity.Person
+	if err := r.db.WithContext(ctx).First(&person, "id = ?", personID).Error; err != nil {
+		return err
+	}
+
+	var lifeGroup entity.LifeGroup
+	if err := r.db.WithContext(ctx).First(&lifeGroup, "id = ?", lifeGroupID).Error; err != nil {
+		return err
+	}
+
+	return r.db.WithContext(ctx).Model(&person).Association("LifeGroups").Append(&lifeGroup)
+}
+
+func (r *lifeGroupRepository) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
+	var person entity.Person
+	if err := r.db.WithContext(ctx).First(&person, "id = ?", personID).Error; err != nil {
+		return err
+	}
+
+	var lifeGroup entity.LifeGroup
+	if err := r.db.WithContext(ctx).First(&lifeGroup, "id = ?", lifeGroupID).Error; err != nil {
+		return err
+	}
+
+	return r.db.WithContext(ctx).Model(&person).Association("LifeGroups").Delete(&lifeGroup)
 }
