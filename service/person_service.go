@@ -66,15 +66,6 @@ func (s *personService) Create(ctx context.Context, req *dto.PersonRequest) (*dt
 		return nil, err
 	}
 
-	// Tambahkan ke LifeGroup jika ada
-	if len(req.LifeGroupIDs) > 0 {
-		for _, lifeGroupID := range req.LifeGroupIDs {
-			if err := s.personRepository.AddToLifeGroup(ctx, person.ID, lifeGroupID); err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	return s.GetByID(ctx, person.ID)
 }
 

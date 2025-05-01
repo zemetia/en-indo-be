@@ -19,8 +19,7 @@ type PersonRepository interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.Person, error)
 	Update(ctx context.Context, person *entity.Person) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
-	RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
+	GetPelayananChurchByID(ctx context.Context, personID uuid.UUID) ([]entity.PersonPelayananGereja, error)
 }
 
 type personRepository struct {
@@ -122,30 +121,8 @@ func (r *personRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&entity.Person{}, "id = ?", id).Error
 }
 
-func (r *personRepository) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	var person entity.Person
-	if err := r.db.WithContext(ctx).First(&person, "id = ?", personID).Error; err != nil {
-		return err
-	}
-
-	var lifeGroup entity.LifeGroup
-	if err := r.db.WithContext(ctx).First(&lifeGroup, "id = ?", lifeGroupID).Error; err != nil {
-		return err
-	}
-
-	return r.db.WithContext(ctx).Model(&person).Association("LifeGroups").Append(&lifeGroup)
-}
-
-func (r *personRepository) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	var person entity.Person
-	if err := r.db.WithContext(ctx).First(&person, "id = ?", personID).Error; err != nil {
-		return err
-	}
-
-	var lifeGroup entity.LifeGroup
-	if err := r.db.WithContext(ctx).First(&lifeGroup, "id = ?", lifeGroupID).Error; err != nil {
-		return err
-	}
-
-	return r.db.WithContext(ctx).Model(&person).Association("LifeGroups").Delete(&lifeGroup)
+func (r *personRepository) GetPelayananChurchByID(ctx context.Context, personID uuid.UUID) ([]entity.PersonPelayananGereja, error) {
+	var pelayanan []entity.PersonPelayananGereja
+	err := r.db.WithContext(ctx).Preload("Church").Preload("Pelayanan").Where("person_id = ?", personID).Find(&pelayanan).Error
+	return pelayanan, err
 }

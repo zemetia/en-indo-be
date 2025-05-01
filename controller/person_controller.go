@@ -14,13 +14,8 @@ type PersonController interface {
 	Create(ctx *gin.Context)
 	GetAll(ctx *gin.Context)
 	GetByID(ctx *gin.Context)
-	// GetByChurchID(ctx *gin.Context)
-	// GetByKabupatenID(ctx *gin.Context)
-	// GetByUserID(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
-	// AddToLifeGroup(ctx *gin.Context)
-	// RemoveFromLifeGroup(ctx *gin.Context)
 }
 
 type personController struct {

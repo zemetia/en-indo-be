@@ -470,11 +470,31 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 		return dto.UserLoginResponse{}, dto.ErrPasswordNotMatch
 	}
 
-	token := s.jwtService.GenerateToken(check.ID.String(), check.Email)
+	pelayanan, err := s.personRepo.GetPelayananChurchByID(ctx, check.PersonID)
+	if err != nil {
+		return dto.UserLoginResponse{}, dto.ErrGetPelayanan
+	}
+
+	var pelayananResponses []dto.PersonHasPelayananResponse
+	for _, p := range pelayanan {
+		pelayananResponses = append(pelayananResponses, dto.PersonHasPelayananResponse{
+			PelayananID: p.PelayananID,
+			Pelayanan:   p.Pelayanan.Pelayanan,
+			ChurchID:    p.ChurchID,
+			ChurchName:  p.Church.Name,
+			IsPic:       p.IsPic,
+		})
+	}
+
+	token := s.jwtService.GenerateToken(check.ID.String(), check.Email, 24*3)
 
 	return dto.UserLoginResponse{
-		Token: token,
-		Email: check.Email,
+		Token:      token,
+		Pelayanan:  pelayananResponses,
+		Nama:       check.Person.Nama,
+		ImageUrl:   check.ImageUrl,
+		IsVerified: check.IsVerified,
+		ExpiredAt:  time.Now().Add(time.Hour * 24 * 3),
 	}, nil
 }
 

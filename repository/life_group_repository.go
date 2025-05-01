@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/zemetia/en-indo-be/dto"
 	"github.com/zemetia/en-indo-be/entity"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type LifeGroupRepository interface {
 	GetByID(id uuid.UUID) (*entity.LifeGroup, error)
 	Update(lifeGroup *entity.LifeGroup) error
 	Delete(id uuid.UUID) error
+	Search(ctx context.Context, search *dto.PersonSearchDto) ([]entity.LifeGroup, error)
 	UpdateLeader(id uuid.UUID, leaderID uuid.UUID) error
 	UpdateMembers(id uuid.UUID, memberIDs []uuid.UUID) error
 	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
@@ -36,7 +38,31 @@ func (r *lifeGroupRepository) Create(lifeGroup *entity.LifeGroup) error {
 
 func (r *lifeGroupRepository) GetAll() ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("Members").Preload("Persons").Find(&lifeGroups).Error
+	err := r.db.Preload("Church").Preload("Leader").Preload("Persons").Find(&lifeGroups).Error
+	return lifeGroups, err
+}
+
+func (r *lifeGroupRepository) Search(ctx context.Context, search *dto.PersonSearchDto) ([]entity.LifeGroup, error) {
+	var lifeGroups []entity.LifeGroup
+	query := r.db.Preload("Church").Preload("Leader").Preload("Persons")
+
+	if search.Name != nil {
+		query = query.Where("nama LIKE ?", "%"+*search.Name+"%")
+	}
+
+	if search.ChurchID != nil {
+		query = query.Where("church_id = ?", search.ChurchID)
+	}
+
+	if search.KabupatenID != nil {
+		query = query.Where("kabupaten_id = ?", search.KabupatenID)
+	}
+
+	if search.UserID != nil {
+		query = query.Where("user_id = ?", search.UserID)
+	}
+
+	err := query.Find(&lifeGroups).Error
 	return lifeGroups, err
 }
 

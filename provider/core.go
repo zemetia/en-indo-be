@@ -27,4 +27,5 @@ func RegisterDependencies(injector *do.Injector) {
 
 	ProvideUserDependencies(injector)
 	ProvidePersonDependencies(injector)
+	ProvideLifeGroupDependencies(injector)
 }

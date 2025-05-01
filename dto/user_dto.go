@@ -56,6 +56,7 @@ var (
 	ErrTokenExpired           = errors.New("token expired")
 	ErrAccountAlreadyVerified = errors.New("account already verified")
 	ErrUploadProfileImage     = errors.New("failed to upload profile image")
+	ErrGetPelayanan           = errors.New("failed to get pelayanan")
 )
 
 type (
@@ -120,10 +121,19 @@ type (
 		Password string `json:"password" form:"password" binding:"required"`
 	}
 
+	// UserLoginResponse struct {
+	// 	Token  string               `json:"token"`
+	// 	Email  string               `json:"email"`
+	// 	Person SimplePersonResponse `json:"person"`
+	// }
+
 	UserLoginResponse struct {
-		Token  string               `json:"token"`
-		Email  string               `json:"email"`
-		Person SimplePersonResponse `json:"person"`
+		Token      string                       `json:"token"`
+		Pelayanan  []PersonHasPelayananResponse `json:"pelayanan"`
+		Nama       string                       `json:"nama"`
+		ImageUrl   string                       `json:"image_url"`
+		IsVerified bool                         `json:"is_verified"`
+		ExpiredAt  time.Time                    `json:"expired_at"`
 	}
 
 	UpdateStatusIsVerifiedRequest struct {
@@ -152,8 +162,11 @@ type (
 	}
 
 	LoginResponse struct {
-		Token string       `json:"token"`
-		User  UserResponse `json:"user"`
+		Token      string                       `json:"token"`
+		Pelayanan  []PersonHasPelayananResponse `json:"pelayanan"`
+		Nama       string                       `json:"nama"`
+		ImageUrl   string                       `json:"image_url"`
+		IsVerified bool                         `json:"is_verified"`
 	}
 
 	UpdateVerificationRequest struct {

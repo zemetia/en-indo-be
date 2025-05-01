@@ -11,6 +11,6 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	// Church(server, injector)
 	// Provinsi(server, injector)
 	// Kabupaten(server, injector)
-	// LifeGroup(server, injector)
+	LifeGroup(server, injector)
 	// Department(server, injector)
 }
