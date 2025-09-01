@@ -33,35 +33,35 @@ type PersonRequest struct {
 }
 
 type PersonResponse struct {
-	ID                uuid.UUID                 `json:"id"`
-	Nama              string                    `json:"nama"`
-	NamaLain          string                    `json:"nama_lain"`
-	Gender            string                    `json:"gender"`
-	TempatLahir       string                    `json:"tempat_lahir"`
-	TanggalLahir      string                    `json:"tanggal_lahir"`
-	FaseHidup         string                    `json:"fase_hidup"`
-	StatusPerkawinan  string                    `json:"status_perkawinan"`
-	NamaPasangan      string                    `json:"nama_pasangan"`
-	PasanganID        *uuid.UUID                `json:"pasangan_id"`
-	TanggalPerkawinan string                    `json:"tanggal_perkawinan"`
-	Alamat            string                    `json:"alamat"`
-	NomorTelepon      string                    `json:"nomor_telepon"`
-	Email             string                    `json:"email"`
-	Ayah              string                    `json:"ayah"`
-	Ibu               string                    `json:"ibu"`
-	Kerinduan         string                    `json:"kerinduan"`
-	KomitmenBerjemaat string                    `json:"komitmen_berjemaat"`
-	Status            string                    `json:"status"`
-	KodeJemaat        string                    `json:"kode_jemaat"`
-	ChurchID          uuid.UUID                 `json:"church_id"`
-	Church            string                    `json:"church"`
-	UserID            *uuid.UUID                `json:"user_id"`
-	KabupatenID       uint                      `json:"kabupaten_id"`
-	Kabupaten         string                    `json:"kabupaten"`
-	LifeGroups        []LifeGroupSimpleResponse `json:"life_groups"`
-	// Pelayanan         []PelayananSimpleResponse `json:"pelayanan"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID                uuid.UUID                    `json:"id"`
+	Nama              string                       `json:"nama"`
+	NamaLain          string                       `json:"nama_lain"`
+	Gender            string                       `json:"gender"`
+	TempatLahir       string                       `json:"tempat_lahir"`
+	TanggalLahir      string                       `json:"tanggal_lahir"`
+	FaseHidup         string                       `json:"fase_hidup"`
+	StatusPerkawinan  string                       `json:"status_perkawinan"`
+	NamaPasangan      string                       `json:"nama_pasangan"`
+	PasanganID        *uuid.UUID                   `json:"pasangan_id"`
+	TanggalPerkawinan string                       `json:"tanggal_perkawinan"`
+	Alamat            string                       `json:"alamat"`
+	NomorTelepon      string                       `json:"nomor_telepon"`
+	Email             string                       `json:"email"`
+	Ayah              string                       `json:"ayah"`
+	Ibu               string                       `json:"ibu"`
+	Kerinduan         string                       `json:"kerinduan"`
+	KomitmenBerjemaat string                       `json:"komitmen_berjemaat"`
+	Status            string                       `json:"status"`
+	KodeJemaat        string                       `json:"kode_jemaat"`
+	ChurchID          uuid.UUID                    `json:"church_id"`
+	Church            string                       `json:"church"`
+	UserID            *uuid.UUID                   `json:"user_id"`
+	KabupatenID       uint                         `json:"kabupaten_id"`
+	Kabupaten         string                       `json:"kabupaten"`
+	LifeGroups        []LifeGroupSimpleResponse    `json:"life_groups"`
+	Pelayanan         []PersonHasPelayananResponse `json:"pelayanan"`
+	CreatedAt         string                       `json:"created_at"`
+	UpdatedAt         string                       `json:"updated_at"`
 }
 
 type PersonSearchDto struct {

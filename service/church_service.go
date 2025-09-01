@@ -60,7 +60,7 @@ func (s *ChurchService) GetByID(id uuid.UUID) (*dto.ChurchResponse, error) {
 	return s.toResponse(church), nil
 }
 
-func (s *ChurchService) GetByKabupatenID(kabupatenID uuid.UUID) ([]dto.ChurchResponse, error) {
+func (s *ChurchService) GetByKabupatenID(kabupatenID uint) ([]dto.ChurchResponse, error) {
 	churches, err := s.churchRepository.GetByKabupatenID(kabupatenID)
 	if err != nil {
 		return nil, err
@@ -74,8 +74,8 @@ func (s *ChurchService) GetByKabupatenID(kabupatenID uuid.UUID) ([]dto.ChurchRes
 	return responses, nil
 }
 
-func (s *ChurchService) GetByProvinsiID(provinsiId uuid.UUID) ([]dto.ChurchResponse, error) {
-	churches, err := s.churchRepository.GetByProvinsiID(provinsiId)
+func (s *ChurchService) GetByProvinsiID(provinsiID uint) ([]dto.ChurchResponse, error) {
+	churches, err := s.churchRepository.GetByProvinsiID(provinsiID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,18 +112,38 @@ func (s *ChurchService) Delete(id uuid.UUID) error {
 }
 
 func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
-	// Get kabupaten name
-	var kabupatenName string
-	kabupaten, err := s.kabupatenRepository.GetByID(church.KabupatenID)
-	if err == nil {
-		kabupatenName = kabupaten.Name
+	if church == nil {
+		return nil
 	}
 
-	// Get provinsi name
+	// Get kabupaten name with better error handling
+	var kabupatenName string
 	var provinsiName string
-	provinsi, err := s.provinsiRepository.GetByID(church.KabupatenID)
-	if err == nil {
-		provinsiName = provinsi.Name
+	var provinsiID uint
+	
+	if church.KabupatenID > 0 {
+		kabupaten, err := s.kabupatenRepository.GetByID(church.KabupatenID)
+		if err == nil && kabupaten != nil {
+			kabupatenName = kabupaten.Name
+			
+			// Get provinsi name
+			if kabupaten.ProvinsiID > 0 {
+				provinsiID = kabupaten.ProvinsiID
+				provinsi, err := s.provinsiRepository.GetByID(provinsiID)
+				if err == nil && provinsi != nil {
+					provinsiName = provinsi.Name
+				}
+			}
+		}
+	}
+
+	// Format dates safely
+	var createdAt, updatedAt string
+	if !church.CreatedAt.IsZero() {
+		createdAt = church.CreatedAt.Format("2006-01-02 15:04:05")
+	}
+	if !church.UpdatedAt.IsZero() {
+		updatedAt = church.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
 
 	return &dto.ChurchResponse{
@@ -134,9 +154,9 @@ func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
 		Email:       church.Email,
 		KabupatenID: church.KabupatenID,
 		Kabupaten:   kabupatenName,
-		ProvinsiID:  church.Kabupaten.ProvinsiID,
+		ProvinsiID:  provinsiID,
 		Provinsi:    provinsiName,
-		CreatedAt:   church.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:   church.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
 	}
 }

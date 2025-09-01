@@ -167,6 +167,7 @@ type (
 		Nama       string                       `json:"nama"`
 		ImageUrl   string                       `json:"image_url"`
 		IsVerified bool                         `json:"is_verified"`
+		ExpiredAt  time.Time                    `json:"expired_at"`
 	}
 
 	UpdateVerificationRequest struct {

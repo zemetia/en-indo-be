@@ -10,8 +10,8 @@ type ChurchRepository interface {
 	Create(church *entity.Church) error
 	GetAll() ([]entity.Church, error)
 	GetByID(id uuid.UUID) (*entity.Church, error)
-	GetByKabupatenID(kabupatenID uuid.UUID) ([]entity.Church, error)
-	GetByProvinsiID(provinsiID uuid.UUID) ([]entity.Church, error)
+	GetByKabupatenID(kabupatenID uint) ([]entity.Church, error)
+	GetByProvinsiID(provinsiID uint) ([]entity.Church, error)
 	Update(church *entity.Church) error
 	Delete(id uuid.UUID) error
 }
@@ -42,15 +42,15 @@ func (r *churchRepository) GetByID(id uuid.UUID) (*entity.Church, error) {
 	return &church, err
 }
 
-func (r *churchRepository) GetByKabupatenID(kabupatenID uuid.UUID) ([]entity.Church, error) {
+func (r *churchRepository) GetByKabupatenID(kabupatenID uint) ([]entity.Church, error) {
 	var churches []entity.Church
 	err := r.db.Preload("Kabupaten").Preload("Provinsi").Where("kabupaten_id = ?", kabupatenID).Find(&churches).Error
 	return churches, err
 }
 
-func (r *churchRepository) GetByProvinsiID(provinsiID uuid.UUID) ([]entity.Church, error) {
+func (r *churchRepository) GetByProvinsiID(provinsiID uint) ([]entity.Church, error) {
 	var churches []entity.Church
-	err := r.db.Preload("Kabupaten").Preload("Provinsi").Where("provinsi_id = ?", provinsiID).Find(&churches).Error
+	err := r.db.Preload("Kabupaten").Joins("JOIN kabupatens ON kabupatens.id = churches.kabupaten_id").Where("kabupatens.provinsi_id = ?", provinsiID).Find(&churches).Error
 	return churches, err
 }
 

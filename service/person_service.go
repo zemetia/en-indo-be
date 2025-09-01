@@ -205,7 +205,11 @@ func (s *personService) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
-	// Format dates
+	if person == nil {
+		return nil
+	}
+
+	// Format dates safely
 	tanggalLahir := ""
 	if !person.TanggalLahir.IsZero() {
 		tanggalLahir = person.TanggalLahir.Format("2006-01-02")
@@ -216,13 +220,34 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 		tanggalPerkawinan = person.TanggalPerkawinan.Format("2006-01-02")
 	}
 
-	// Get lifegroups
+	// Format timestamps safely
+	var createdAt, updatedAt string
+	if !person.CreatedAt.IsZero() {
+		createdAt = person.CreatedAt.Format("2006-01-02 15:04:05")
+	}
+	if !person.UpdatedAt.IsZero() {
+		updatedAt = person.UpdatedAt.Format("2006-01-02 15:04:05")
+	}
+
+	// Get lifegroups safely
 	var lifeGroups []dto.LifeGroupSimpleResponse
 	for _, lg := range person.LifeGroups {
 		lifeGroups = append(lifeGroups, dto.LifeGroupSimpleResponse{
 			ID:   lg.ID,
 			Name: lg.Name,
 		})
+	}
+
+	// Get church name safely
+	var churchName string
+	if person.ChurchID != uuid.Nil && person.Church.Name != "" {
+		churchName = person.Church.Name
+	}
+
+	// Get kabupaten name safely
+	var kabupatenName string
+	if person.KabupatenID > 0 && person.Kabupaten.Name != "" {
+		kabupatenName = person.Kabupaten.Name
 	}
 
 	return &dto.PersonResponse{
@@ -247,11 +272,11 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 		Status:            person.Status,
 		KodeJemaat:        person.KodeJemaat,
 		ChurchID:          person.ChurchID,
-		Church:            person.Church.Name,
+		Church:            churchName,
 		KabupatenID:       person.KabupatenID,
-		Kabupaten:         person.Kabupaten.Name,
+		Kabupaten:         kabupatenName,
 		LifeGroups:        lifeGroups,
-		CreatedAt:         person.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:         person.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:         createdAt,
+		UpdatedAt:         updatedAt,
 	}
 }

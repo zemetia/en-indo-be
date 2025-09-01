@@ -1,131 +1,259 @@
 package controller
 
-// import (
-// 	"net/http"
+import (
+	"net/http"
+	"strconv"
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/google/uuid"
-// 	"github.com/zemetia/en-indo-be/dto"
-// 	"github.com/zemetia/en-indo-be/service"
-// )
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/zemetia/en-indo-be/dto"
+	"github.com/zemetia/en-indo-be/service"
+)
 
-// type ChurchController struct {
-// 	churchService *service.ChurchService
-// }
+type ChurchController interface {
+	Create(ctx *gin.Context)
+	GetAll(ctx *gin.Context)
+	GetByID(ctx *gin.Context)
+	GetByKabupatenID(ctx *gin.Context)
+	GetByProvinsiID(ctx *gin.Context)
+	Update(ctx *gin.Context)
+	Delete(ctx *gin.Context)
+}
 
-// func NewChurchController(churchService *service.ChurchService) *ChurchController {
-// 	return &ChurchController{
-// 		churchService: churchService,
-// 	}
-// }
+type churchController struct {
+	churchService *service.ChurchService
+}
 
-// func (c *ChurchController) Create(ctx *gin.Context) {
-// 	var req dto.ChurchRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func NewChurchController(churchService *service.ChurchService) ChurchController {
+	return &churchController{
+		churchService: churchService,
+	}
+}
 
-// 	church, err := c.churchService.Create(&req)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *churchController) Create(ctx *gin.Context) {
+	var req dto.ChurchRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusCreated, church)
-// }
+	church, err := c.churchService.Create(&req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to create church",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *ChurchController) GetAll(ctx *gin.Context) {
-// 	churches, err := c.churchService.GetAll()
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Success create church",
+		"data":    church,
+	})
+}
 
-// 	ctx.JSON(http.StatusOK, churches)
-// }
+func (c *churchController) GetAll(ctx *gin.Context) {
+	// Check if user wants all records without pagination
+	all := ctx.Query("all")
+	perPageStr := ctx.DefaultQuery("per_page", "10")
+	
+	if all == "true" || perPageStr == "0" {
+		churches, err := c.churchService.GetAll()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to get churches",
+				"error":   err.Error(),
+			})
+			return
+		}
 
-// func (c *ChurchController) GetByID(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Success get all churches",
+			"data":    churches,
+			"count":   len(churches),
+		})
+		return
+	}
+	
+	// Parse pagination parameters
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(perPageStr)
+	
+	churches, err := c.churchService.GetAll()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get churches",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	church, err := c.churchService.GetByID(id)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	// Calculate pagination
+	total := len(churches)
+	startIdx := (page - 1) * perPage
+	endIdx := startIdx + perPage
+	
+	if startIdx >= total {
+		startIdx = 0
+		endIdx = 0
+		churches = []dto.ChurchResponse{}
+	} else {
+		if endIdx > total {
+			endIdx = total
+		}
+		churches = churches[startIdx:endIdx]
+	}
+	
+	maxPage := (total + perPage - 1) / perPage
+	if maxPage == 0 {
+		maxPage = 1
+	}
 
-// 	ctx.JSON(http.StatusOK, church)
-// }
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get all churches",
+		"data": gin.H{
+			"data":     churches,
+			"page":     page,
+			"per_page": perPage,
+			"max_page": maxPage,
+			"count":    total,
+		},
+	})
+}
 
-// func (c *ChurchController) GetByKabupatenID(ctx *gin.Context) {
-// 	kabupatenID, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+func (c *churchController) GetByID(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	churches, err := c.churchService.GetByKabupatenID(kabupatenID)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	church, err := c.churchService.GetByID(id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Church not found",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, churches)
-// }
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get church",
+		"data":    church,
+	})
+}
 
-// func (c *ChurchController) GetByProvinsiID(ctx *gin.Context) {
-// 	provinsiID, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+func (c *churchController) GetByKabupatenID(ctx *gin.Context) {
+	kabupatenIDStr := ctx.Param("id")
+	kabupatenID, err := strconv.ParseUint(kabupatenIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid kabupaten ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	churches, err := c.churchService.GetByProvinsiID(provinsiID)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	churches, err := c.churchService.GetByKabupatenID(uint(kabupatenID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get churches by kabupaten",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, churches)
-// }
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get churches by kabupaten",
+		"data":    churches,
+	})
+}
 
-// func (c *ChurchController) Update(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+func (c *churchController) GetByProvinsiID(ctx *gin.Context) {
+	provinsiIDStr := ctx.Param("id")
+	provinsiID, err := strconv.ParseUint(provinsiIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid provinsi ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	var req dto.ChurchRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	churches, err := c.churchService.GetByProvinsiID(uint(provinsiID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get churches by provinsi",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	church, err := c.churchService.Update(id, &req)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get churches by provinsi",
+		"data":    churches,
+	})
+}
 
-// 	ctx.JSON(http.StatusOK, church)
-// }
+func (c *churchController) Update(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *ChurchController) Delete(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+	var req dto.ChurchRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	if err := c.churchService.Delete(id); err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	church, err := c.churchService.Update(id, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update church",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, gin.H{"message": "Gereja berhasil dihapus"})
-// }
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success update church",
+		"data":    church,
+	})
+}
+
+func (c *churchController) Delete(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if err := c.churchService.Delete(id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to delete church",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success delete church",
+	})
+}

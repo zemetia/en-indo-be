@@ -14,6 +14,7 @@ type PersonController interface {
 	Create(ctx *gin.Context)
 	GetAll(ctx *gin.Context)
 	GetByID(ctx *gin.Context)
+	GetByUserID(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
 }
@@ -31,17 +32,26 @@ func NewPersonController(personService service.PersonService) PersonController {
 func (c *personController) Create(ctx *gin.Context) {
 	var req dto.PersonRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	res, err := c.personService.Create(ctx, &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to create person",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, res)
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Success create person",
+		"data":    res,
+	})
 }
 
 func (c *personController) GetAll(ctx *gin.Context) {
@@ -75,93 +85,229 @@ func (c *personController) GetAll(ctx *gin.Context) {
 	}
 
 	// Jika ada parameter pencarian, gunakan Search
-	if search.ChurchID != nil || search.KabupatenID != nil || search.UserID != nil {
+	if search.ChurchID != nil || search.KabupatenID != nil || search.UserID != nil || search.Name != nil {
 		res, err := c.personService.Search(ctx, &search)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to search persons",
+				"error":   err.Error(),
+			})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, res)
+		// Check if user wants all records without pagination for search results
+		all := ctx.Query("all")
+		perPageStr := ctx.DefaultQuery("per_page", "10")
+		
+		if all == "true" || perPageStr == "0" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"message": "Success search persons",
+				"data":    res,
+				"count":   len(res),
+			})
+			return
+		}
+
+		// Apply pagination to search results
+		page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+		perPage, _ := strconv.Atoi(perPageStr)
+		
+		total := len(res)
+		startIdx := (page - 1) * perPage
+		endIdx := startIdx + perPage
+		
+		if startIdx >= total {
+			startIdx = 0
+			endIdx = 0
+			res = []dto.SimplePersonResponse{}
+		} else {
+			if endIdx > total {
+				endIdx = total
+			}
+			res = res[startIdx:endIdx]
+		}
+		
+		maxPage := (total + perPage - 1) / perPage
+		if maxPage == 0 {
+			maxPage = 1
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Success search persons",
+			"data": gin.H{
+				"data":     res,
+				"page":     page,
+				"per_page": perPage,
+				"max_page": maxPage,
+				"count":    total,
+			},
+		})
 		return
 	}
 
 	// Jika tidak ada parameter pencarian, ambil semua data
 	res, err := c.personService.GetAll(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get all persons",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	// Check if user wants all records without pagination
+	all := ctx.Query("all")
+	perPageStr := ctx.DefaultQuery("per_page", "10")
+	
+	if all == "true" || perPageStr == "0" {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Success get all persons",
+			"data":    res,
+			"count":   len(res),
+		})
+		return
+	}
+
+	// Apply pagination
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(perPageStr)
+	
+	total := len(res)
+	startIdx := (page - 1) * perPage
+	endIdx := startIdx + perPage
+	
+	if startIdx >= total {
+		startIdx = 0
+		endIdx = 0
+		res = []dto.SimplePersonResponse{}
+	} else {
+		if endIdx > total {
+			endIdx = total
+		}
+		res = res[startIdx:endIdx]
+	}
+	
+	maxPage := (total + perPage - 1) / perPage
+	if maxPage == 0 {
+		maxPage = 1
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get all persons",
+		"data": gin.H{
+			"data":     res,
+			"page":     page,
+			"per_page": perPage,
+			"max_page": maxPage,
+			"count":    total,
+		},
+	})
 }
 
 func (c *personController) GetByID(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	res, err := c.personService.GetByID(ctx, id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Person not found",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get person",
+		"data":    res,
+	})
 }
 
 func (c *personController) GetByUserID(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("user_id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid user ID format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	res, err := c.personService.GetByUserID(ctx, userID)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Person not found for user",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get person by user",
+		"data":    res,
+	})
 }
 
 func (c *personController) Update(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	var req dto.PersonRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	res, err := c.personService.Update(ctx, id, &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update person",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success update person",
+		"data":    res,
+	})
 }
 
 func (c *personController) Delete(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	err = c.personService.Delete(ctx, id)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to delete person",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Person deleted successfully"})
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success delete person",
+	})
 }

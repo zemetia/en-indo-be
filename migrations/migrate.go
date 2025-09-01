@@ -17,6 +17,12 @@ func Migrate(db *gorm.DB) error {
 		&entity.Provinsi{},
 		&entity.PersonPelayananGereja{},
 		&entity.Pelayanan{},
+		// Event-related entities with enhanced recurrence support
+		&entity.RecurrenceRule{},
+		&entity.RecurrenceException{},
+		&entity.Event{},
+		&entity.DiscipleshipJourney{},
+		&entity.Lagu{},
 	); err != nil {
 		return err
 	}
