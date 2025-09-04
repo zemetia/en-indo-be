@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -108,7 +109,7 @@ func (rg *RecurrenceGenerator) generateWeeklyOccurrences(start, end time.Time, r
 		interval = 1
 	}
 
-	weekdays := rule.ByWeekday
+	weekdays := rg.jsonToStringSlice(rule.ByWeekday)
 	if len(weekdays) == 0 {
 		// Default to the original event's weekday
 		weekdays = []string{rg.getWeekdayAbbreviation(originalStart.Weekday())}
@@ -220,13 +221,15 @@ func (rg *RecurrenceGenerator) generateMonthOccurrences(monthStart time.Time, ru
 	}
 
 	// Handle ByWeekday with BySetPos (e.g., 2nd Monday, last Friday)
-	if len(rule.ByWeekday) > 0 {
-		weekdayOccurrences := rg.getWeekdayOccurrencesInMonth(monthStart, rule.ByWeekday, originalStart)
+	weekdays := rg.jsonToStringSlice(rule.ByWeekday)
+	if len(weekdays) > 0 {
+		weekdayOccurrences := rg.getWeekdayOccurrencesInMonth(monthStart, weekdays, originalStart)
 		
-		if len(rule.BySetPos) > 0 {
+		bySetPos := rg.jsonToInt64Slice(rule.BySetPos)
+		if len(bySetPos) > 0 {
 			// Apply BySetPos filtering
 			var filtered []time.Time
-			for _, pos := range rule.BySetPos {
+			for _, pos := range bySetPos {
 				posInt := int(pos)
 				if posInt > 0 && posInt <= len(weekdayOccurrences) {
 					filtered = append(filtered, weekdayOccurrences[posInt-1])
@@ -288,7 +291,7 @@ func (rg *RecurrenceGenerator) generateYearlyOccurrences(start, end time.Time, r
 func (rg *RecurrenceGenerator) generateYearOccurrences(year int, rule *entity.RecurrenceRule, originalStart time.Time) []time.Time {
 	var occurrences []time.Time
 
-	months := rule.ByMonth
+	months := rg.jsonToInt64Slice(rule.ByMonth)
 	if len(months) == 0 {
 		// Default to original month
 		months = []int64{int64(originalStart.Month())}
@@ -454,7 +457,8 @@ func (rg *RecurrenceGenerator) ValidateRecurrenceRule(rule *entity.RecurrenceRul
 	}
 
 	// Validate weekdays
-	for _, weekday := range rule.ByWeekday {
+	weekdays := rg.jsonToStringSlice(rule.ByWeekday)
+	for _, weekday := range weekdays {
 		if _, ok := rg.parseWeekday(weekday); !ok {
 			return fmt.Errorf("invalid weekday: %s", weekday)
 		}
@@ -512,4 +516,31 @@ func (rg *RecurrenceGenerator) GetNextOccurrence(event *entity.Event, rule *enti
 	}
 
 	return nil, nil
+}
+
+// Helper functions to convert JSON strings to slices
+func (rg *RecurrenceGenerator) jsonToStringSlice(jsonStr string) []string {
+	if jsonStr == "" {
+		return []string{}
+	}
+	
+	var result []string
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return []string{}
+	}
+	
+	return result
+}
+
+func (rg *RecurrenceGenerator) jsonToInt64Slice(jsonStr string) []int64 {
+	if jsonStr == "" {
+		return []int64{}
+	}
+	
+	var result []int64
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return []int64{}
+	}
+	
+	return result
 }

@@ -17,9 +17,9 @@ type LifeGroupController interface {
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
 	UpdateLeader(ctx *gin.Context)
-	UpdateMembers(ctx *gin.Context)
-	AddToLifeGroup(ctx *gin.Context)
-	RemoveFromLifeGroup(ctx *gin.Context)
+	GetByChurch(ctx *gin.Context)
+	GetByUser(ctx *gin.Context)
+	GetByMultipleChurches(ctx *gin.Context)
 }
 
 type lifeGroupController struct {
@@ -174,20 +174,17 @@ func (c *lifeGroupController) UpdateLeader(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *lifeGroupController) UpdateMembers(ctx *gin.Context) {
-	id, err := uuid.Parse(ctx.Param("id"))
+
+
+
+func (c *lifeGroupController) GetByChurch(ctx *gin.Context) {
+	churchID, err := uuid.Parse(ctx.Param("church_id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid church ID format"})
 		return
 	}
 
-	var req dto.UpdateMembersRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	response, err := c.lifeGroupService.UpdateMembers(id, &req)
+	response, err := c.lifeGroupService.GetByChurchID(churchID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -196,46 +193,42 @@ func (c *lifeGroupController) UpdateMembers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *lifeGroupController) AddToLifeGroup(ctx *gin.Context) {
-	personID, err := uuid.Parse(ctx.Param("id"))
+func (c *lifeGroupController) GetByUser(ctx *gin.Context) {
+	userID, err := uuid.Parse(ctx.Param("user_id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
 
-	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
-		return
-	}
-
-	err = c.lifeGroupService.AddToLifeGroup(ctx, personID, lifeGroupID)
+	response, err := c.lifeGroupService.GetByUserID(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Person added to life group successfully"})
+	ctx.JSON(http.StatusOK, response)
 }
 
-func (c *lifeGroupController) RemoveFromLifeGroup(ctx *gin.Context) {
-	personID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID format"})
+
+
+
+func (c *lifeGroupController) GetByMultipleChurches(ctx *gin.Context) {
+	var req dto.BatchChurchLifeGroupsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	lifeGroupID, err := uuid.Parse(ctx.Param("life_group_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid life group ID format"})
+	if len(req.ChurchIDs) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "At least one church ID is required"})
 		return
 	}
 
-	err = c.lifeGroupService.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
+	response, err := c.lifeGroupService.GetByMultipleChurchIDs(req.ChurchIDs)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Person removed from life group successfully"})
+	ctx.JSON(http.StatusOK, response)
 }

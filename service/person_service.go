@@ -26,14 +26,16 @@ type personService struct {
 	churchRepository    repository.ChurchRepository
 	kabupatenRepository repository.KabupatenRepository
 	lifeGroupRepository repository.LifeGroupRepository
+	pelayananService    PelayananService
 }
 
-func NewPersonService(personRepository repository.PersonRepository, churchRepository repository.ChurchRepository, kabupatenRepository repository.KabupatenRepository, lifeGroupRepository repository.LifeGroupRepository) PersonService {
+func NewPersonService(personRepository repository.PersonRepository, churchRepository repository.ChurchRepository, kabupatenRepository repository.KabupatenRepository, lifeGroupRepository repository.LifeGroupRepository, pelayananService PelayananService) PersonService {
 	return &personService{
 		personRepository:    personRepository,
 		churchRepository:    churchRepository,
 		kabupatenRepository: kabupatenRepository,
 		lifeGroupRepository: lifeGroupRepository,
+		pelayananService:    pelayananService,
 	}
 }
 
@@ -125,7 +127,7 @@ func (s *personService) GetByID(ctx context.Context, id uuid.UUID) (*dto.PersonR
 		return nil, err
 	}
 
-	return s.toResponse(person), nil
+	return s.toResponse(ctx, person), nil
 }
 
 func (s *personService) GetByChurchID(ctx context.Context, churchID uuid.UUID) ([]dto.PersonResponse, error) {
@@ -136,7 +138,7 @@ func (s *personService) GetByChurchID(ctx context.Context, churchID uuid.UUID) (
 
 	var responses []dto.PersonResponse
 	for _, person := range persons {
-		responses = append(responses, *s.toResponse(&person))
+		responses = append(responses, *s.toResponse(ctx, &person))
 	}
 
 	return responses, nil
@@ -150,7 +152,7 @@ func (s *personService) GetByKabupatenID(ctx context.Context, kabupatenID uuid.U
 
 	var responses []dto.PersonResponse
 	for _, person := range persons {
-		responses = append(responses, *s.toResponse(&person))
+		responses = append(responses, *s.toResponse(ctx, &person))
 	}
 
 	return responses, nil
@@ -162,7 +164,7 @@ func (s *personService) GetByUserID(ctx context.Context, userID uuid.UUID) (*dto
 		return nil, err
 	}
 
-	return s.toResponse(person), nil
+	return s.toResponse(ctx, person), nil
 }
 
 func (s *personService) Update(ctx context.Context, id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error) {
@@ -204,7 +206,7 @@ func (s *personService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.personRepository.Delete(ctx, id)
 }
 
-func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
+func (s *personService) toResponse(ctx context.Context, person *entity.Person) *dto.PersonResponse {
 	if person == nil {
 		return nil
 	}
@@ -250,6 +252,14 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 		kabupatenName = person.Kabupaten.Name
 	}
 
+	// Get pelayanan safely
+	var pelayananResponses []dto.PersonHasPelayananResponse
+	if s.pelayananService != nil {
+		if pelayanan, err := s.pelayananService.GetMyPelayanan(ctx, person.ID); err == nil {
+			pelayananResponses = pelayanan
+		}
+	}
+
 	return &dto.PersonResponse{
 		ID:                person.ID,
 		Nama:              person.Nama,
@@ -276,6 +286,7 @@ func (s *personService) toResponse(person *entity.Person) *dto.PersonResponse {
 		KabupatenID:       person.KabupatenID,
 		Kabupaten:         kabupatenName,
 		LifeGroups:        lifeGroups,
+		Pelayanan:         pelayananResponses,
 		CreatedAt:         createdAt,
 		UpdatedAt:         updatedAt,
 	}

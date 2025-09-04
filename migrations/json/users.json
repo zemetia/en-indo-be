@@ -1,9 +1,9 @@
 [
   {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "email": "yoelsit@gmail.com",
     "password": "$2a$12$zePPdFIQfbulT.HBM6Vu9uIlbJHed9/Ffavfo1aquDDAQrnf4EpMC",
     "image_url": "https://via.placeholder.com/150",
-    "is_verified": true,
     "person_id": "77285a15-dcd1-4c50-bd45-46efe6aeea3a"
   }
 ]

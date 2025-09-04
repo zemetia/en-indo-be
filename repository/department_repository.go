@@ -10,7 +10,6 @@ type DepartmentRepository interface {
 	Create(department *entity.Department) error
 	GetAll() ([]entity.Department, error)
 	GetByID(id uuid.UUID) (*entity.Department, error)
-	GetByChurchID(churchID uuid.UUID) ([]entity.Department, error)
 	Update(department *entity.Department) error
 	Delete(id uuid.UUID) error
 }
@@ -41,11 +40,6 @@ func (r *departmentRepository) GetByID(id uuid.UUID) (*entity.Department, error)
 	return &department, err
 }
 
-func (r *departmentRepository) GetByChurchID(churchID uuid.UUID) ([]entity.Department, error) {
-	var departments []entity.Department
-	err := r.db.Where("church_id = ?", churchID).Find(&departments).Error
-	return departments, err
-}
 
 func (r *departmentRepository) Update(department *entity.Department) error {
 	return r.db.Save(department).Error

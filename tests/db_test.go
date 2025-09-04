@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/zemetia/en-indo-be/constants"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -36,11 +36,10 @@ func SetUpDatabaseConnection() *gorm.DB {
 		panic("Missing required environment variables")
 	}
 
-	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v TimeZone=Asia/Jakarta", dbHost, dbUser, dbPass, dbName, dbPort)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
 
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true,
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DSN: dsn,
 	}), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())

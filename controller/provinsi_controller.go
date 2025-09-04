@@ -1,46 +1,51 @@
 package controller
 
-// import (
-// 	"net/http"
-// 	"strconv"
+import (
+	"net/http"
+	"strconv"
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/zemetia/en-indo-be/service"
-// )
+	"github.com/gin-gonic/gin"
+	"github.com/zemetia/en-indo-be/service"
+)
 
-// type ProvinsiController struct {
-// 	provinsiService *service.ProvinsiService
-// }
+type ProvinsiController interface {
+	GetAll(ctx *gin.Context)
+	GetByID(ctx *gin.Context)
+}
 
-// func NewProvinsiController(provinsiService *service.ProvinsiService) *ProvinsiController {
-// 	return &ProvinsiController{
-// 		provinsiService: provinsiService,
-// 	}
-// }
+type provinsiController struct {
+	provinsiService service.ProvinsiService
+}
 
-// func (c *ProvinsiController) GetAll(ctx *gin.Context) {
-// 	provinsi, err := c.provinsiService.GetAll()
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func NewProvinsiController(provinsiService service.ProvinsiService) ProvinsiController {
+	return &provinsiController{
+		provinsiService: provinsiService,
+	}
+}
 
-// 	ctx.JSON(http.StatusOK, provinsi)
-// }
+func (c *provinsiController) GetAll(ctx *gin.Context) {
+	provinsi, err := c.provinsiService.GetAll()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-// func (c *ProvinsiController) GetByID(ctx *gin.Context) {
-// 	idStr := ctx.Param("id")
-// 	id, err := strconv.ParseUint(idStr, 10, 32)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Success", "data": provinsi})
+}
 
-// 	provinsi, err := c.provinsiService.GetByID(uint(id))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *provinsiController) GetByID(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, provinsi)
-// }
+	provinsi, err := c.provinsiService.GetByID(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Success", "data": provinsi})
+}

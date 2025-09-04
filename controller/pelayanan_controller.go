@@ -11,12 +11,18 @@ import (
 )
 
 type PelayananController interface {
+	// Pelayanan entity CRUD
+	CreatePelayanan(ctx *gin.Context)
+	UpdatePelayanan(ctx *gin.Context)
+	DeletePelayanan(ctx *gin.Context)
+	GetPelayananByID(ctx *gin.Context)
+	GetAllPelayanan(ctx *gin.Context)
+	
+	// Assignment operations
 	GetMyPelayanan(ctx *gin.Context)
 	GetAllAssignments(ctx *gin.Context)
-	GetAllPelayanan(ctx *gin.Context)
 	AssignPelayanan(ctx *gin.Context)
 	UnassignPelayanan(ctx *gin.Context)
-	UpdatePelayananAssignment(ctx *gin.Context)
 	GetAssignmentByID(ctx *gin.Context)
 }
 
@@ -28,6 +34,114 @@ func NewPelayananController(pelayananService service.PelayananService) Pelayanan
 	return &pelayananController{
 		pelayananService: pelayananService,
 	}
+}
+
+// Pelayanan entity CRUD methods
+func (c *pelayananController) CreatePelayanan(ctx *gin.Context) {
+	var req dto.PelayananRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	pelayanan, err := c.pelayananService.CreatePelayanan(ctx, req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to create pelayanan",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Success create pelayanan",
+		"data":    pelayanan,
+	})
+}
+
+func (c *pelayananController) UpdatePelayanan(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	var req dto.UpdatePelayananRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	pelayanan, err := c.pelayananService.UpdatePelayanan(ctx, id, req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update pelayanan",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success update pelayanan",
+		"data":    pelayanan,
+	})
+}
+
+func (c *pelayananController) DeletePelayanan(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if err := c.pelayananService.DeletePelayanan(ctx, id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to delete pelayanan",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success delete pelayanan",
+	})
+}
+
+func (c *pelayananController) GetPelayananByID(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	pelayanan, err := c.pelayananService.GetPelayananByID(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Pelayanan not found",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get pelayanan",
+		"data":    pelayanan,
+	})
 }
 
 func (c *pelayananController) GetMyPelayanan(ctx *gin.Context) {
@@ -93,7 +207,9 @@ func (c *pelayananController) GetAllAssignments(ctx *gin.Context) {
 }
 
 func (c *pelayananController) GetAllPelayanan(ctx *gin.Context) {
-	pelayanan, err := c.pelayananService.GetAllPelayanan(ctx)
+	departmentID := ctx.Query("department_id")
+	
+	pelayanan, err := c.pelayananService.GetAllPelayanan(ctx, departmentID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get all pelayanan",
@@ -153,39 +269,6 @@ func (c *pelayananController) UnassignPelayanan(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Success unassign pelayanan",
-	})
-}
-
-func (c *pelayananController) UpdatePelayananAssignment(ctx *gin.Context) {
-	assignmentID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid assignment ID format",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	var req dto.UpdatePelayananAssignmentRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to get data from request body",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	err = c.pelayananService.UpdatePelayananAssignment(ctx, assignmentID, req)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to update pelayanan assignment",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Success update pelayanan assignment",
 	})
 }
 

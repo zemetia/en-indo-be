@@ -8,6 +8,7 @@ type Pelayanan struct {
 	Description  string     `gorm:"type:text"`
 	DepartmentID uuid.UUID  `gorm:"type:char(36);not null"`
 	Department   Department `gorm:"foreignKey:DepartmentID"`
+	IsPic        bool       `gorm:"type:boolean;not null;default:false"`
 
 	Timestamp
 }

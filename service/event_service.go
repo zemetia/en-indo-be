@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -339,15 +340,41 @@ func (s *eventService) GetOccurrencesInRange(req *dto.GetEventOccurrencesRequest
 // Helper methods
 
 func (s *eventService) createRecurrenceRuleEntity(req *dto.CreateRecurrenceRuleRequest) (*entity.RecurrenceRule, error) {
+	// Convert slice fields to JSON strings
+	byWeekdayJSON, err := s.sliceToJSON(req.ByWeekday)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ByWeekday to JSON: %w", err)
+	}
+	
+	byMonthDayJSON, err := s.sliceToJSON(req.ByMonthDay)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ByMonthDay to JSON: %w", err)
+	}
+	
+	byMonthJSON, err := s.sliceToJSON(req.ByMonth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ByMonth to JSON: %w", err)
+	}
+	
+	bySetPosJSON, err := s.sliceToJSON(req.BySetPos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert BySetPos to JSON: %w", err)
+	}
+	
+	byYearDayJSON, err := s.sliceToJSON(req.ByYearDay)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ByYearDay to JSON: %w", err)
+	}
+
 	rule := &entity.RecurrenceRule{
 		Frequency:  req.Frequency,
 		Interval:   req.Interval,
-		ByWeekday:  req.ByWeekday,
-		ByMonthDay: req.ByMonthDay,
-		ByMonth:    req.ByMonth,
-		BySetPos:   req.BySetPos,
+		ByWeekday:  byWeekdayJSON,
+		ByMonthDay: byMonthDayJSON,
+		ByMonth:    byMonthJSON,
+		BySetPos:   bySetPosJSON,
 		WeekStart:  req.WeekStart,
-		ByYearDay:  req.ByYearDay,
+		ByYearDay:  byYearDayJSON,
 		Count:      req.Count,
 	}
 	
@@ -396,16 +423,42 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 	}
 	
 	if event.RecurrenceRule != nil {
+		// Convert JSON strings to slices
+		byWeekday, err := s.jsonToStringSlice(event.RecurrenceRule.ByWeekday)
+		if err != nil {
+			byWeekday = []string{} // Default to empty slice on error
+		}
+		
+		byMonthDay, err := s.jsonToInt64Slice(event.RecurrenceRule.ByMonthDay)
+		if err != nil {
+			byMonthDay = []int64{} // Default to empty slice on error
+		}
+		
+		byMonth, err := s.jsonToInt64Slice(event.RecurrenceRule.ByMonth)
+		if err != nil {
+			byMonth = []int64{} // Default to empty slice on error
+		}
+		
+		bySetPos, err := s.jsonToInt64Slice(event.RecurrenceRule.BySetPos)
+		if err != nil {
+			bySetPos = []int64{} // Default to empty slice on error
+		}
+		
+		byYearDay, err := s.jsonToInt64Slice(event.RecurrenceRule.ByYearDay)
+		if err != nil {
+			byYearDay = []int64{} // Default to empty slice on error
+		}
+		
 		response.RecurrenceRule = &dto.RecurrenceRuleResponse{
 			ID:         event.RecurrenceRule.ID,
 			Frequency:  event.RecurrenceRule.Frequency,
 			Interval:   event.RecurrenceRule.Interval,
-			ByWeekday:  event.RecurrenceRule.ByWeekday,
-			ByMonthDay: event.RecurrenceRule.ByMonthDay,
-			ByMonth:    event.RecurrenceRule.ByMonth,
-			BySetPos:   event.RecurrenceRule.BySetPos,
+			ByWeekday:  byWeekday,
+			ByMonthDay: byMonthDay,
+			ByMonth:    byMonth,
+			BySetPos:   bySetPos,
 			WeekStart:  event.RecurrenceRule.WeekStart,
-			ByYearDay:  event.RecurrenceRule.ByYearDay,
+			ByYearDay:  byYearDay,
 			Count:      event.RecurrenceRule.Count,
 			Until:      event.RecurrenceRule.Until,
 		}
@@ -552,15 +605,21 @@ func (s *eventService) UpdateFutureOccurrences(id uuid.UUID, req *dto.UpdateFutu
 
 func (s *eventService) ValidateRecurrenceRule(rule *dto.CreateRecurrenceRuleRequest) error {
 	// Convert DTO to entity for validation
+	byWeekdayJSON, _ := s.sliceToJSON(rule.ByWeekday)
+	byMonthDayJSON, _ := s.sliceToJSON(rule.ByMonthDay)
+	byMonthJSON, _ := s.sliceToJSON(rule.ByMonth)
+	bySetPosJSON, _ := s.sliceToJSON(rule.BySetPos)
+	byYearDayJSON, _ := s.sliceToJSON(rule.ByYearDay)
+	
 	entityRule := &entity.RecurrenceRule{
 		Frequency:  rule.Frequency,
 		Interval:   rule.Interval,
-		ByWeekday:  rule.ByWeekday,
-		ByMonthDay: rule.ByMonthDay,
-		ByMonth:    rule.ByMonth,
-		BySetPos:   rule.BySetPos,
+		ByWeekday:  byWeekdayJSON,
+		ByMonthDay: byMonthDayJSON,
+		ByMonth:    byMonthJSON,
+		BySetPos:   bySetPosJSON,
 		WeekStart:  rule.WeekStart,
-		ByYearDay:  rule.ByYearDay,
+		ByYearDay:  byYearDayJSON,
 	}
 
 	if entityRule.Interval == 0 {
@@ -696,15 +755,22 @@ func (s *eventService) createNewSeriesFromDate(originalEvent *entity.Event, from
 	if recurrenceRule != nil {
 		createReq.RecurrenceRule = recurrenceRule
 	} else if originalEvent.RecurrenceRule != nil {
+		// Convert JSON strings back to slices for DTO
+		byWeekday, _ := s.jsonToStringSlice(originalEvent.RecurrenceRule.ByWeekday)
+		byMonthDay, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.ByMonthDay)
+		byMonth, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.ByMonth)
+		bySetPos, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.BySetPos)
+		byYearDay, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.ByYearDay)
+		
 		createReq.RecurrenceRule = &dto.CreateRecurrenceRuleRequest{
 			Frequency:  originalEvent.RecurrenceRule.Frequency,
 			Interval:   originalEvent.RecurrenceRule.Interval,
-			ByWeekday:  originalEvent.RecurrenceRule.ByWeekday,
-			ByMonthDay: originalEvent.RecurrenceRule.ByMonthDay,
-			ByMonth:    originalEvent.RecurrenceRule.ByMonth,
-			BySetPos:   originalEvent.RecurrenceRule.BySetPos,
+			ByWeekday:  byWeekday,
+			ByMonthDay: byMonthDay,
+			ByMonth:    byMonth,
+			BySetPos:   bySetPos,
 			WeekStart:  originalEvent.RecurrenceRule.WeekStart,
-			ByYearDay:  originalEvent.RecurrenceRule.ByYearDay,
+			ByYearDay:  byYearDay,
 			Count:      originalEvent.RecurrenceRule.Count,
 		}
 		if originalEvent.RecurrenceRule.Until != nil {
@@ -753,4 +819,60 @@ func (s *eventService) skipSingleOccurrence(event *entity.Event, occurrenceDate 
 
 func (s *eventService) deleteFutureOccurrences(event *entity.Event, fromDate time.Time) error {
 	return s.eventRepo.DeleteFutureOccurrences(event.ID, fromDate)
+}
+
+// Helper function to convert slice to JSON string
+func (s *eventService) sliceToJSON(slice interface{}) (string, error) {
+	if slice == nil {
+		return "", nil
+	}
+	
+	// Handle empty slices
+	switch v := slice.(type) {
+	case []string:
+		if len(v) == 0 {
+			return "", nil
+		}
+	case []int64:
+		if len(v) == 0 {
+			return "", nil
+		}
+	}
+	
+	jsonBytes, err := json.Marshal(slice)
+	if err != nil {
+		return "", err
+	}
+	
+	return string(jsonBytes), nil
+}
+
+// Helper function to convert JSON string to string slice
+func (s *eventService) jsonToStringSlice(jsonStr string) ([]string, error) {
+	if jsonStr == "" {
+		return []string{}, nil
+	}
+	
+	var result []string
+	err := json.Unmarshal([]byte(jsonStr), &result)
+	if err != nil {
+		return []string{}, err
+	}
+	
+	return result, nil
+}
+
+// Helper function to convert JSON string to int64 slice
+func (s *eventService) jsonToInt64Slice(jsonStr string) ([]int64, error) {
+	if jsonStr == "" {
+		return []int64{}, nil
+	}
+	
+	var result []int64
+	err := json.Unmarshal([]byte(jsonStr), &result)
+	if err != nil {
+		return []int64{}, err
+	}
+	
+	return result, nil
 }

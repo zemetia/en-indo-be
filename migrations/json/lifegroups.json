@@ -1,0 +1,43 @@
+[
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "name": "LifeGroup Rungkut",
+    "location": "Jl. Rungkut Mega Raya Blok A No. 15, Surabaya",
+    "whatsapp_link": "https://wa.me/qr/LG-RUNGKUT-001",
+    "church_id": "123e4567-e89b-12d3-a456-426614174002",
+    "leader_id": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440002",
+    "name": "LifeGroup Gubeng",
+    "location": "Jl. Gubeng Kertajaya No. 25, Surabaya",
+    "whatsapp_link": "https://wa.me/qr/LG-GUBENG-002",
+    "church_id": "123e4567-e89b-12d3-a456-426614174002",
+    "leader_id": "880e8400-e29b-41d4-a716-446655440001"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440003",
+    "name": "LifeGroup Darmo",
+    "location": "Jl. Darmo Permai Selatan No. 18, Surabaya",
+    "whatsapp_link": "https://wa.me/qr/LG-DARMO-003",
+    "church_id": "123e4567-e89b-12d3-a456-426614174002",
+    "leader_id": "880e8400-e29b-41d4-a716-446655440002",
+    "co_leader_id": "user-yoel-2024-001"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440004",
+    "name": "LifeGroup Wiyung",
+    "location": "Jl. Wiyung Raya No. 45, Surabaya",
+    "whatsapp_link": "https://wa.me/qr/LG-WIYUNG-004",
+    "church_id": "123e4567-e89b-12d3-a456-426614174002",
+    "leader_id": "880e8400-e29b-41d4-a716-446655440003"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440005",
+    "name": "LifeGroup Pakuwon",
+    "location": "Pakuwon City Mall, Food Court Lt. 3, Surabaya",
+    "whatsapp_link": "https://wa.me/qr/LG-PAKUWON-005",
+    "church_id": "123e4567-e89b-12d3-a456-426614174002",
+    "leader_id": "880e8400-e29b-41d4-a716-446655440004"
+  }
+]

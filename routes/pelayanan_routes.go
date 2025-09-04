@@ -11,10 +11,11 @@ import (
 
 func Pelayanan(route *gin.Engine, injector *do.Injector) {
 	jwtService := do.MustInvokeNamed[service.JWTService](injector, constants.JWTService)
+	userService := do.MustInvokeNamed[service.UserService](injector, constants.UserService)
 	pelayananController := do.MustInvoke[controller.PelayananController](injector)
 
 	routes := route.Group("/api/pelayanan")
-	routes.Use(middleware.Authenticate(jwtService))
+	routes.Use(middleware.Authenticate(jwtService, userService))
 	{
 		// User's own pelayanan assignments
 		routes.GET("/my", pelayananController.GetMyPelayanan)
@@ -22,16 +23,22 @@ func Pelayanan(route *gin.Engine, injector *do.Injector) {
 		// Get all available pelayanan (for dropdowns, etc.)
 		routes.GET("/list", pelayananController.GetAllPelayanan)
 
-		// Admin-only routes for managing assignments
+		// Admin-only routes for pelayanan entity management
 		adminRoutes := routes.Group("")
 		// TODO: Add admin middleware when available
 		// adminRoutes.Use(middleware.AdminOnly())
 		{
+			// Assignment management - specific routes first
 			adminRoutes.GET("/assignments", pelayananController.GetAllAssignments)
 			adminRoutes.POST("/assign", pelayananController.AssignPelayanan)
-			adminRoutes.PUT("/assignments/:id", pelayananController.UpdatePelayananAssignment)
 			adminRoutes.DELETE("/assignments/:id", pelayananController.UnassignPelayanan)
 			adminRoutes.GET("/assignments/:id", pelayananController.GetAssignmentByID)
+			
+			// Pelayanan entity CRUD - parameterized routes last
+			adminRoutes.POST("", pelayananController.CreatePelayanan)
+			adminRoutes.GET("/:id", pelayananController.GetPelayananByID)
+			adminRoutes.PUT("/:id", pelayananController.UpdatePelayanan)
+			adminRoutes.DELETE("/:id", pelayananController.DeletePelayanan)
 		}
 	}
 }

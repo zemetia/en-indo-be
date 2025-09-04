@@ -16,10 +16,11 @@ type LifeGroupService interface {
 	Update(id uuid.UUID, req *dto.LifeGroupRequest) (*dto.LifeGroupResponse, error)
 	Delete(id uuid.UUID) error
 	UpdateLeader(id uuid.UUID, req *dto.UpdateLeaderRequest) (*dto.LifeGroupResponse, error)
-	UpdateMembers(id uuid.UUID, req *dto.UpdateMembersRequest) (*dto.LifeGroupResponse, error)
 	Search(ctx context.Context, search *dto.PersonSearchDto) ([]dto.LifeGroupResponse, error)
-	AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
-	RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error
+	GetByChurchID(churchID uuid.UUID) ([]dto.LifeGroupResponse, error)
+	GetByUserID(userID uuid.UUID) ([]dto.LifeGroupResponse, error)
+	CheckUserPermission(userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
+	GetByMultipleChurchIDs(churchIDs []uuid.UUID) ([]dto.BatchChurchLifeGroupsResponse, error)
 }
 
 type lifeGroupService struct {
@@ -40,24 +41,14 @@ func (s *lifeGroupService) Create(req *dto.LifeGroupRequest) (*dto.LifeGroupResp
 		WhatsAppLink: req.WhatsAppLink,
 		ChurchID:     req.ChurchID,
 		LeaderID:     req.LeaderID,
+		CoLeaderID:   req.CoLeaderID,
 	}
 
 	if err := s.lifeGroupRepo.Create(lifeGroup); err != nil {
 		return nil, err
 	}
 
-	// Update members and persons if provided
-	if len(req.MemberIDs) > 0 {
-		if err := s.lifeGroupRepo.UpdateMembers(lifeGroup.ID, req.MemberIDs); err != nil {
-			return nil, err
-		}
-	}
-
-	// if len(req.PersonIDs) > 0 {
-	// 	if err := s.lifeGroupRepo.UpdatePersons(lifeGroup.ID, req.PersonIDs); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+	// Member management is now handled through separate PersonMember and VisitorMember APIs
 
 	// Get updated life group with all relations
 	updatedLifeGroup, err := s.lifeGroupRepo.GetByID(lifeGroup.ID)
@@ -116,23 +107,13 @@ func (s *lifeGroupService) Update(id uuid.UUID, req *dto.LifeGroupRequest) (*dto
 	lifeGroup.WhatsAppLink = req.WhatsAppLink
 	lifeGroup.ChurchID = req.ChurchID
 	lifeGroup.LeaderID = req.LeaderID
+	lifeGroup.CoLeaderID = req.CoLeaderID
 
 	if err := s.lifeGroupRepo.Update(lifeGroup); err != nil {
 		return nil, err
 	}
 
-	// Update members and persons if provided
-	if len(req.MemberIDs) > 0 {
-		if err := s.lifeGroupRepo.UpdateMembers(id, req.MemberIDs); err != nil {
-			return nil, err
-		}
-	}
-
-	// if len(req.PersonIDs) > 0 {
-	// 	if err := s.lifeGroupRepo.UpdatePersons(id, req.PersonIDs); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+	// Member management is now handled through separate PersonMember and VisitorMember APIs
 
 	// Get updated life group with all relations
 	updatedLifeGroup, err := s.lifeGroupRepo.GetByID(id)
@@ -160,29 +141,9 @@ func (s *lifeGroupService) UpdateLeader(id uuid.UUID, req *dto.UpdateLeaderReque
 	return s.toResponse(lifeGroup), nil
 }
 
-func (s *lifeGroupService) UpdateMembers(id uuid.UUID, req *dto.UpdateMembersRequest) (*dto.LifeGroupResponse, error) {
-	if err := s.lifeGroupRepo.UpdateMembers(id, req.MemberIDs); err != nil {
-		return nil, err
-	}
-
-	lifeGroup, err := s.lifeGroupRepo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.toResponse(lifeGroup), nil
-}
-
-func (s *lifeGroupService) AddToLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	return s.lifeGroupRepo.AddToLifeGroup(ctx, personID, lifeGroupID)
-}
-
-func (s *lifeGroupService) RemoveFromLifeGroup(ctx context.Context, personID uuid.UUID, lifeGroupID uuid.UUID) error {
-	return s.lifeGroupRepo.RemoveFromLifeGroup(ctx, personID, lifeGroupID)
-}
 
 func (s *lifeGroupService) toResponse(lifeGroup *entity.LifeGroup) *dto.LifeGroupResponse {
-	return &dto.LifeGroupResponse{
+	response := &dto.LifeGroupResponse{
 		ID:           lifeGroup.ID,
 		Name:         lifeGroup.Name,
 		Location:     lifeGroup.Location,
@@ -191,8 +152,94 @@ func (s *lifeGroupService) toResponse(lifeGroup *entity.LifeGroup) *dto.LifeGrou
 		Church:       lifeGroup.Church,
 		LeaderID:     lifeGroup.LeaderID,
 		Leader:       lifeGroup.Leader,
-		Persons:      lifeGroup.Persons,
+		PersonMembers:  lifeGroup.PersonMembers,
+		VisitorMembers: lifeGroup.VisitorMembers,
 		CreatedAt:    lifeGroup.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:    lifeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
+	
+	if lifeGroup.CoLeaderID != nil {
+		response.CoLeaderID = lifeGroup.CoLeaderID
+		response.CoLeader = lifeGroup.CoLeader
+	}
+	
+	return response
+}
+
+func (s *lifeGroupService) GetByChurchID(churchID uuid.UUID) ([]dto.LifeGroupResponse, error) {
+	lifeGroups, err := s.lifeGroupRepo.GetByChurchID(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.LifeGroupResponse
+	for _, lifeGroup := range lifeGroups {
+		responses = append(responses, *s.toResponse(&lifeGroup))
+	}
+
+	return responses, nil
+}
+
+func (s *lifeGroupService) GetByUserID(userID uuid.UUID) ([]dto.LifeGroupResponse, error) {
+	lifeGroups, err := s.lifeGroupRepo.GetByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.LifeGroupResponse
+	for _, lifeGroup := range lifeGroups {
+		responses = append(responses, *s.toResponse(&lifeGroup))
+	}
+
+	return responses, nil
+}
+
+func (s *lifeGroupService) CheckUserPermission(userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error) {
+	// Check if user is leader or co-leader of the lifegroup
+	lifeGroup, err := s.lifeGroupRepo.GetByID(lifeGroupID)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if user is leader or co-leader
+	if lifeGroup.LeaderID == userID {
+		return true, nil
+	}
+	if lifeGroup.CoLeaderID != nil && *lifeGroup.CoLeaderID == userID {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (s *lifeGroupService) GetByMultipleChurchIDs(churchIDs []uuid.UUID) ([]dto.BatchChurchLifeGroupsResponse, error) {
+	responses := make([]dto.BatchChurchLifeGroupsResponse, 0, len(churchIDs))
+
+	for _, churchID := range churchIDs {
+		response := dto.BatchChurchLifeGroupsResponse{
+			ChurchID: churchID,
+		}
+
+		// Get lifegroups for this church
+		lifeGroups, err := s.lifeGroupRepo.GetByChurchID(churchID)
+		if err != nil {
+			errorMsg := err.Error()
+			response.Error = &errorMsg
+		} else {
+			// Convert to response DTOs
+			var lifegroupResponses []dto.LifeGroupResponse
+			for _, lifeGroup := range lifeGroups {
+				lifegroupResponses = append(lifegroupResponses, *s.toResponse(&lifeGroup))
+				// Set church name from the first lifegroup's church info
+				if response.ChurchName == "" && lifeGroup.Church.Name != "" {
+					response.ChurchName = lifeGroup.Church.Name
+				}
+			}
+			response.LifeGroups = lifegroupResponses
+		}
+
+		responses = append(responses, response)
+	}
+
+	return responses, nil
 }

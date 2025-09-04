@@ -26,8 +26,12 @@ func RegisterDependencies(injector *do.Injector) {
 	})
 
 	ProvideUserDependencies(injector)
-	ProvidePersonDependencies(injector)
 	ProvideLifeGroupDependencies(injector)
-	ProvidePelayananDependencies(injector)
+	ProvideDepartmentDependencies(injector)
 	ProvideChurchDependencies(injector)
+	ProvideProvinsiDependencies(injector)
+	ProvideKabupatenDependencies(injector)
+	ProvidePelayananDependencies(injector)
+	ProvidePersonDependencies(injector)
+	ProvideVisitorDependencies(injector)
 }

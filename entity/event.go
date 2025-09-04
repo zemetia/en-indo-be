@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 type Event struct {
@@ -37,12 +36,12 @@ type RecurrenceRule struct {
 	ID         uuid.UUID      `gorm:"type:char(36);primary_key"`
 	Frequency  string         `gorm:"type:varchar(16);not null"` // DAILY, WEEKLY, MONTHLY, YEARLY
 	Interval   int            `gorm:"default:1;not null"`        // multiples of frequency
-	ByWeekday  pq.StringArray `gorm:"type:text[]"`               // e.g. ["MO","TU"], only for WEEKLY
-	ByMonthDay pq.Int64Array  `gorm:"type:integer[]"`            // e.g. [1,15], only for MONTHLY
-	ByMonth    pq.Int64Array  `gorm:"type:integer[]"`            // e.g. [1,6,12], only for YEARLY
-	BySetPos   pq.Int64Array  `gorm:"type:integer[]"`            // e.g. [1,-1] for first/last occurrence
-	WeekStart  string         `gorm:"type:varchar(2);default:'MO'"` // week start day (MO, SU, etc.)
-	ByYearDay  pq.Int64Array  `gorm:"type:integer[]"`            // day of year (1-366)
+	ByWeekday  string `gorm:"type:text"`                         // JSON string: ["MO","TU"], only for WEEKLY
+	ByMonthDay string `gorm:"type:text"`                         // JSON string: [1,15], only for MONTHLY
+	ByMonth    string `gorm:"type:text"`                         // JSON string: [1,6,12], only for YEARLY
+	BySetPos   string `gorm:"type:text"`                         // JSON string: [1,-1] for first/last occurrence
+	WeekStart  string `gorm:"type:varchar(2);default:'MO'"`      // week start day (MO, SU, etc.)
+	ByYearDay  string `gorm:"type:text"`                         // JSON string: day of year (1-366)
 	Count      *int           `gorm:""`                          // optional: limit total occurrences
 	Until      *time.Time     `gorm:""`                          // optional: end date for occurrences
 

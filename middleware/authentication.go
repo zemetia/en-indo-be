@@ -10,7 +10,7 @@ import (
 	"github.com/zemetia/en-indo-be/utils"
 )
 
-func Authenticate(jwtService service.JWTService) gin.HandlerFunc {
+func Authenticate(jwtService service.JWTService, userService service.UserService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
@@ -41,8 +41,18 @@ func Authenticate(jwtService service.JWTService) gin.HandlerFunc {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
+		
+		// Get user data to extract PersonID
+		user, err := userService.GetUserById(ctx, userId)
+		if err != nil {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, "user not found", nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		
 		ctx.Set("token", authHeader)
 		ctx.Set("user_id", userId)
+		ctx.Set("person_id", user.PersonID.String())
 		ctx.Next()
 	}
 }

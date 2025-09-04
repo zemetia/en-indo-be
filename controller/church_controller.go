@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,8 +33,11 @@ func NewChurchController(churchService *service.ChurchService) ChurchController 
 }
 
 func (c *churchController) Create(ctx *gin.Context) {
+	log.Printf("[INFO] Church Controller: Received create church request")
+	
 	var req dto.ChurchRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("[ERROR] Church Controller: Failed to bind JSON: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": "Failed to get data from request body",
 			"error":   err.Error(),
@@ -40,8 +45,59 @@ func (c *churchController) Create(ctx *gin.Context) {
 		return
 	}
 
+	// Log the incoming request data in detail
+	log.Printf("[INFO] Church Controller: Creating church with data:")
+	log.Printf("  - Name: %s", req.Name)
+	log.Printf("  - Address: %s", req.Address)
+	log.Printf("  - ChurchCode: '%s'", req.ChurchCode)
+	log.Printf("  - Phone: %s", req.Phone)
+	log.Printf("  - Email: %s", req.Email)
+	log.Printf("  - Website: %s", req.Website)
+	log.Printf("  - Latitude: %f", req.Latitude)
+	log.Printf("  - Longitude: %f", req.Longitude)
+	log.Printf("  - KabupatenID: %d", req.KabupatenID)
+
+	// Validate required fields
+	if req.Name == "" {
+		log.Printf("[ERROR] Church Controller: Name is required but empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Name is required",
+			"error":   "name field cannot be empty",
+		})
+		return
+	}
+	
+	if req.Address == "" {
+		log.Printf("[ERROR] Church Controller: Address is required but empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Address is required",
+			"error":   "address field cannot be empty",
+		})
+		return
+	}
+	
+	// Church code is now optional, but if provided, it should not be just whitespace
+	if req.ChurchCode != "" && len(strings.TrimSpace(req.ChurchCode)) == 0 {
+		log.Printf("[ERROR] Church Controller: ChurchCode contains only whitespace")
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Church code cannot be only whitespace",
+			"error":   "church_code field cannot contain only whitespace",
+		})
+		return
+	}
+	
+	if req.KabupatenID == 0 {
+		log.Printf("[ERROR] Church Controller: KabupatenID is required but zero")
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Kabupaten ID is required",
+			"error":   "kabupaten_id field cannot be zero",
+		})
+		return
+	}
+
 	church, err := c.churchService.Create(&req)
 	if err != nil {
+		log.Printf("[ERROR] Church Controller: Service error: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to create church",
 			"error":   err.Error(),
@@ -49,6 +105,7 @@ func (c *churchController) Create(ctx *gin.Context) {
 		return
 	}
 
+	log.Printf("[INFO] Church Controller: Successfully created church: %s", church.Name)
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message": "Success create church",
 		"data":    church,
@@ -113,14 +170,12 @@ func (c *churchController) GetAll(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Success get all churches",
-		"data": gin.H{
-			"data":     churches,
-			"page":     page,
-			"per_page": perPage,
-			"max_page": maxPage,
-			"count":    total,
-		},
+		"message":  "Success get all churches",
+		"data":     churches,
+		"page":     page,
+		"per_page": perPage,
+		"max_page": maxPage,
+		"count":    total,
 	})
 }
 

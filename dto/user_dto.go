@@ -25,7 +25,6 @@ const (
 	MESSAGE_FAILED_DELETE_USER             = "failed delete user"
 	MESSAGE_FAILED_PROSES_REQUEST          = "failed proses request"
 	MESSAGE_FAILED_DENIED_ACCESS           = "denied access"
-	MESSAGE_FAILED_VERIFY_EMAIL            = "failed verify email"
 
 	// Success
 	MESSAGE_SUCCESS_REGISTER_USER           = "success create user"
@@ -34,8 +33,6 @@ const (
 	MESSAGE_SUCCESS_LOGIN                   = "success login"
 	MESSAGE_SUCCESS_UPDATE_USER             = "success update user"
 	MESSAGE_SUCCESS_DELETE_USER             = "success delete user"
-	MESSAGE_SEND_VERIFICATION_EMAIL_SUCCESS = "success send verification email"
-	MESSAGE_SUCCESS_VERIFY_EMAIL            = "success verify email"
 )
 
 var (
@@ -51,12 +48,12 @@ var (
 	ErrDeleteUser             = errors.New("failed to delete user")
 	ErrPasswordNotMatch       = errors.New("password not match")
 	ErrEmailOrPassword        = errors.New("wrong email or password")
-	ErrAccountNotVerified     = errors.New("account not verified")
 	ErrTokenInvalid           = errors.New("token invalid")
 	ErrTokenExpired           = errors.New("token expired")
-	ErrAccountAlreadyVerified = errors.New("account already verified")
 	ErrUploadProfileImage     = errors.New("failed to upload profile image")
 	ErrGetPelayanan           = errors.New("failed to get pelayanan")
+	ErrUserInactive           = errors.New("user account is inactive")
+	ErrUserNoPelayanan        = errors.New("user has no pelayanan assignments")
 )
 
 type (
@@ -70,14 +67,16 @@ type (
 	}
 
 	UserResponse struct {
-		ID         uuid.UUID      `json:"id"`
-		Email      string         `json:"email"`
-		ImageUrl   string         `json:"image_url"`
-		IsVerified bool           `json:"is_verified"`
-		PersonID   uuid.UUID      `json:"person_id"`
-		Person     PersonResponse `json:"person"`
-		CreatedAt  time.Time      `json:"created_at"`
-		UpdatedAt  time.Time      `json:"updated_at"`
+		ID                        uuid.UUID      `json:"id"`
+		Email                     string         `json:"email"`
+		ImageUrl                  string         `json:"image_url"`
+		IsActive                  bool           `json:"is_active"`
+		HasChangedDefaultPassword bool           `json:"has_changed_default_password"`
+		LastLoginAt               *time.Time     `json:"last_login_at"`
+		PersonID                  uuid.UUID      `json:"person_id"`
+		Person                    PersonResponse `json:"person"`
+		CreatedAt                 time.Time      `json:"created_at"`
+		UpdatedAt                 time.Time      `json:"updated_at"`
 	}
 
 	UserPaginationResponse struct {
@@ -100,21 +99,11 @@ type (
 		ID         string `json:"id"`
 		Email      string `json:"email"`
 		ImageUrl   string `json:"image_url"`
-		IsVerified bool   `json:"is_verified"`
+		IsActive   bool   `json:"is_active"`
 	}
 
-	SendVerificationEmailRequest struct {
-		Email string `json:"email" form:"email" binding:"required"`
-	}
 
-	VerifyEmailRequest struct {
-		Token string `json:"token" form:"token" binding:"required"`
-	}
 
-	VerifyEmailResponse struct {
-		Email      string `json:"email"`
-		IsVerified bool   `json:"is_verified"`
-	}
 
 	UserLoginRequest struct {
 		Email    string `json:"email" form:"email" binding:"required"`
@@ -128,24 +117,21 @@ type (
 	// }
 
 	UserLoginResponse struct {
-		Token      string                       `json:"token"`
-		Pelayanan  []PersonHasPelayananResponse `json:"pelayanan"`
-		Nama       string                       `json:"nama"`
-		ImageUrl   string                       `json:"image_url"`
-		IsVerified bool                         `json:"is_verified"`
-		ExpiredAt  time.Time                    `json:"expired_at"`
+		Token                   string                       `json:"token"`
+		Pelayanan               []PersonHasPelayananResponse `json:"pelayanan"`
+		Nama                    string                       `json:"nama"`
+		ImageUrl                string                       `json:"image_url"`
+		IsFirstTimeLogin        bool                         `json:"is_first_time_login"`
+		RequiresPasswordSetup   bool                         `json:"requires_password_setup"`
+		DefaultPasswordHint     string                       `json:"default_password_hint,omitempty"`
+		ExpiredAt               time.Time                    `json:"expired_at"`
 	}
 
-	UpdateStatusIsVerifiedRequest struct {
-		UserId     string `json:"user_id" form:"user_id" binding:"required"`
-		IsVerified bool   `json:"is_verified" form:"is_verified"`
-	}
 
 	UserRequest struct {
 		Email      string    `json:"email" binding:"required,email"`
 		Password   string    `json:"password" binding:"required,min=6"`
 		ImageUrl   string    `json:"image_url"`
-		IsVerified bool      `json:"is_verified"`
 		PersonID   uuid.UUID `json:"person_id" binding:"required"`
 	}
 
@@ -166,11 +152,17 @@ type (
 		Pelayanan  []PersonHasPelayananResponse `json:"pelayanan"`
 		Nama       string                       `json:"nama"`
 		ImageUrl   string                       `json:"image_url"`
-		IsVerified bool                         `json:"is_verified"`
 		ExpiredAt  time.Time                    `json:"expired_at"`
 	}
 
-	UpdateVerificationRequest struct {
-		IsVerified bool `json:"is_verified" binding:"required"`
+
+	PasswordSetupRequest struct {
+		Action      string `json:"action" binding:"required,oneof=change keep"` // "change" or "keep"
+		NewPassword string `json:"new_password,omitempty"`
+	}
+
+	PasswordSetupResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
 	}
 )

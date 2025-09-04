@@ -17,7 +17,8 @@ type UserRepository interface {
 	GetByPersonID(ctx context.Context, personID uuid.UUID) (*entity.User, error)
 	Update(ctx context.Context, user *entity.User) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	UpdateVerificationStatus(ctx context.Context, id uuid.UUID, isVerified bool) error
+	UpdateActivationStatus(ctx context.Context, id uuid.UUID, isActive bool) error
+	HasActivePelayanan(ctx context.Context, personID uuid.UUID) (bool, error)
 	RegisterUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error)
 	GetAllUserWithPagination(ctx context.Context, tx *gorm.DB, req dto.PaginationRequest) (dto.GetAllUserRepositoryResponse, error)
 	GetUserById(ctx context.Context, tx *gorm.DB, userId string) (entity.User, error)
@@ -73,8 +74,15 @@ func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&entity.User{}, "id = ?", id).Error
 }
 
-func (r *userRepository) UpdateVerificationStatus(ctx context.Context, id uuid.UUID, isVerified bool) error {
-	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", id).Update("is_verified", isVerified).Error
+
+func (r *userRepository) UpdateActivationStatus(ctx context.Context, id uuid.UUID, isActive bool) error {
+	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", id).Update("is_active", isActive).Error
+}
+
+func (r *userRepository) HasActivePelayanan(ctx context.Context, personID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&entity.PersonPelayananGereja{}).Where("person_id = ?", personID).Count(&count).Error
+	return count > 0, err
 }
 
 func (r *userRepository) RegisterUser(ctx context.Context, tx *gorm.DB, user entity.User) (entity.User, error) {

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // Event creation request
@@ -122,12 +121,12 @@ type RecurrenceRuleResponse struct {
 	ID         uuid.UUID      `json:"id"`
 	Frequency  string         `json:"frequency"`
 	Interval   int            `json:"interval"`
-	ByWeekday  pq.StringArray `json:"byWeekday"`
-	ByMonthDay pq.Int64Array  `json:"byMonthDay"`
-	ByMonth    pq.Int64Array  `json:"byMonth"`
-	BySetPos   pq.Int64Array  `json:"bySetPos"`
-	WeekStart  string         `json:"weekStart"`
-	ByYearDay  pq.Int64Array  `json:"byYearDay"`
+	ByWeekday  []string `json:"byWeekday"`
+	ByMonthDay []int64  `json:"byMonthDay"`
+	ByMonth    []int64  `json:"byMonth"`
+	BySetPos   []int64  `json:"bySetPos"`
+	WeekStart  string   `json:"weekStart"`
+	ByYearDay  []int64  `json:"byYearDay"`
 	Count      *int           `json:"count"`
 	Until      *time.Time     `json:"until"`
 }

@@ -20,7 +20,8 @@ func ProvidePersonDependencies(injector *do.Injector) {
 	lifeGroupRepository := repository.NewLifeGroupRepository(db)
 
 	// Service
-	personService := service.NewPersonService(personRepository, churchRepository, kabupatenRepository, lifeGroupRepository)
+	pelayananService := do.MustInvokeNamed[service.PelayananService](injector, constants.PelayananService)
+	personService := service.NewPersonService(personRepository, churchRepository, kabupatenRepository, lifeGroupRepository, pelayananService)
 
 	// Controller
 	do.Provide(injector, func(i *do.Injector) (controller.PersonController, error) {

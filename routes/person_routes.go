@@ -11,17 +11,18 @@ import (
 
 func Person(route *gin.Engine, injector *do.Injector) {
 	jwtService := do.MustInvokeNamed[service.JWTService](injector, constants.JWTService)
+	userService := do.MustInvokeNamed[service.UserService](injector, constants.UserService)
 	personController := do.MustInvoke[controller.PersonController](injector)
 
 	routes := route.Group("/api/person")
 	{
 		// Semua route person memerlukan autentikasi
-		routes.POST("", middleware.Authenticate(jwtService), personController.Create)
-		routes.GET("", middleware.Authenticate(jwtService), personController.GetAll)
-		routes.GET("/:id", middleware.Authenticate(jwtService), personController.GetByID)
-		routes.GET("/user/:user_id", middleware.Authenticate(jwtService), personController.GetByUserID)
-		routes.PUT("/:id", middleware.Authenticate(jwtService), personController.Update)
-		routes.DELETE("/:id", middleware.Authenticate(jwtService), personController.Delete)
+		routes.POST("", middleware.Authenticate(jwtService, userService), personController.Create)
+		routes.GET("", middleware.Authenticate(jwtService, userService), personController.GetAll)
+		routes.GET("/:id", middleware.Authenticate(jwtService, userService), personController.GetByID)
+		routes.GET("/user/:user_id", middleware.Authenticate(jwtService, userService), personController.GetByUserID)
+		routes.PUT("/:id", middleware.Authenticate(jwtService, userService), personController.Update)
+		routes.DELETE("/:id", middleware.Authenticate(jwtService, userService), personController.Delete)
 
 	}
 }

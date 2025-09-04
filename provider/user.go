@@ -19,10 +19,13 @@ func ProvideUserDependencies(injector *do.Injector) {
 	personRepository := repository.NewPersonRepository(db)
 
 	// Service
-	userService := service.NewUserService(userRepository, personRepository, documentService, jwtService)
+	do.ProvideNamed(injector, constants.UserService, func(i *do.Injector) (service.UserService, error) {
+		return service.NewUserService(userRepository, personRepository, documentService, jwtService), nil
+	})
 
 	// Controller
 	do.Provide(injector, func(i *do.Injector) (controller.UserController, error) {
+		userService := do.MustInvokeNamed[service.UserService](i, constants.UserService)
 		return controller.NewUserController(userService), nil
 	})
 }

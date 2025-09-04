@@ -1,115 +1,151 @@
 package controller
 
-// import (
-// 	"net/http"
+import (
+	"net/http"
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/google/uuid"
-// 	"github.com/zemetia/en-indo-be/dto"
-// 	"github.com/zemetia/en-indo-be/service"
-// )
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/zemetia/en-indo-be/dto"
+	"github.com/zemetia/en-indo-be/service"
+)
 
-// type DepartmentController struct {
-// 	departmentService *service.DepartmentService
-// }
+type DepartmentController interface {
+	Create(ctx *gin.Context)
+	GetAll(ctx *gin.Context)
+	GetByID(ctx *gin.Context)
+	Update(ctx *gin.Context)
+	Delete(ctx *gin.Context)
+}
 
-// func NewDepartmentController(departmentService *service.DepartmentService) *DepartmentController {
-// 	return &DepartmentController{
-// 		departmentService: departmentService,
-// 	}
-// }
+type departmentController struct {
+	departmentService service.DepartmentService
+}
 
-// func (c *DepartmentController) Create(ctx *gin.Context) {
-// 	var req dto.DepartmentRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func NewDepartmentController(departmentService service.DepartmentService) DepartmentController {
+	return &departmentController{
+		departmentService: departmentService,
+	}
+}
 
-// 	department, err := c.departmentService.Create(&req)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *departmentController) Create(ctx *gin.Context) {
+	var req dto.DepartmentRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusCreated, department)
-// }
+	department, err := c.departmentService.Create(&req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to create department",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *DepartmentController) GetAll(ctx *gin.Context) {
-// 	departments, err := c.departmentService.GetAll()
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Success create department",
+		"data":    department,
+	})
+}
 
-// 	ctx.JSON(http.StatusOK, departments)
-// }
+func (c *departmentController) GetAll(ctx *gin.Context) {
+	departments, err := c.departmentService.GetAll()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get departments",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *DepartmentController) GetByID(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get all departments",
+		"data":    departments,
+	})
+}
 
-// 	department, err := c.departmentService.GetByID(id)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *departmentController) GetByID(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, department)
-// }
+	department, err := c.departmentService.GetByID(id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Department not found",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *DepartmentController) GetByChurchID(ctx *gin.Context) {
-// 	churchID, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get department",
+		"data":    department,
+	})
+}
 
-// 	departments, err := c.departmentService.GetByChurchID(churchID)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *departmentController) Update(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, departments)
-// }
+	var req dto.DepartmentRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to get data from request body",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *DepartmentController) Update(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
+	department, err := c.departmentService.Update(id, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update department",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	var req dto.DepartmentRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success update department",
+		"data":    department,
+	})
+}
 
-// 	department, err := c.departmentService.Update(id, &req)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (c *departmentController) Delete(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, department)
-// }
+	if err := c.departmentService.Delete(id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to delete department",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-// func (c *DepartmentController) Delete(ctx *gin.Context) {
-// 	id, err := uuid.Parse(ctx.Param("id"))
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-// 		return
-// 	}
-
-// 	if err := c.departmentService.Delete(id); err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, gin.H{"message": "Departemen berhasil dihapus"})
-// }
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success delete department",
+	})
+}

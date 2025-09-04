@@ -43,7 +43,7 @@ Every Nation Indonesia adalah jaringan gereja yang tersebar di seluruh Indonesia
 
 - Go (Golang)
 - Gin Framework
-- PostgreSQL
+- MySQL
 - JWT untuk autentikasi
 - GORM untuk ORM
 

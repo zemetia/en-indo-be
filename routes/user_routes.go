@@ -11,6 +11,7 @@ import (
 
 func User(route *gin.Engine, injector *do.Injector) {
 	jwtService := do.MustInvokeNamed[service.JWTService](injector, constants.JWTService)
+	userService := do.MustInvokeNamed[service.UserService](injector, constants.UserService)
 	userController := do.MustInvoke[controller.UserController](injector)
 
 	routes := route.Group("/api/user")
@@ -19,9 +20,16 @@ func User(route *gin.Engine, injector *do.Injector) {
 		routes.POST("/register", userController.Register)
 		routes.POST("/login", userController.Login)
 
+		// Auth-related routes
+		authRoutes := routes.Group("/auth")
+		authRoutes.Use(middleware.Authenticate(jwtService, userService))
+		{
+			authRoutes.POST("/setup-password", userController.SetupPassword)
+		}
+
 		// Protected routes
 		protected := routes.Group("")
-		protected.Use(middleware.Authenticate(jwtService))
+		protected.Use(middleware.Authenticate(jwtService, userService))
 		{
 			protected.GET("", userController.GetAll)
 			protected.GET("/:id", userController.GetByID)
@@ -30,6 +38,7 @@ func User(route *gin.Engine, injector *do.Injector) {
 			protected.PUT("/:id", userController.Update)
 			protected.DELETE("/:id", userController.Delete)
 			protected.POST("/:id/upload-profile-image", userController.UploadProfileImage)
+			protected.PUT("/person/:person_id/toggle-status", userController.ToggleActivationStatus)
 		}
 	}
 }

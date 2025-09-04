@@ -6,17 +6,23 @@ import (
 	"github.com/zemetia/en-indo-be/repository"
 )
 
-type KabupatenService struct {
+type KabupatenService interface {
+	GetAll() ([]dto.KabupatenResponse, error)
+	GetByID(id uint) (*dto.KabupatenResponse, error)
+	GetByProvinsiID(provinsiID uint) ([]dto.KabupatenResponse, error)
+}
+
+type kabupatenService struct {
 	kabupatenRepository repository.KabupatenRepository
 }
 
-func NewKabupatenService(kabupatenRepository repository.KabupatenRepository) *KabupatenService {
-	return &KabupatenService{
+func NewKabupatenService(kabupatenRepository repository.KabupatenRepository) KabupatenService {
+	return &kabupatenService{
 		kabupatenRepository: kabupatenRepository,
 	}
 }
 
-func (s *KabupatenService) GetAll() ([]dto.KabupatenResponse, error) {
+func (s *kabupatenService) GetAll() ([]dto.KabupatenResponse, error) {
 	kabupaten, err := s.kabupatenRepository.GetAll()
 	if err != nil {
 		return nil, err
@@ -30,7 +36,7 @@ func (s *KabupatenService) GetAll() ([]dto.KabupatenResponse, error) {
 	return responses, nil
 }
 
-func (s *KabupatenService) GetByID(id uint) (*dto.KabupatenResponse, error) {
+func (s *kabupatenService) GetByID(id uint) (*dto.KabupatenResponse, error) {
 	kabupaten, err := s.kabupatenRepository.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -39,7 +45,7 @@ func (s *KabupatenService) GetByID(id uint) (*dto.KabupatenResponse, error) {
 	return s.toResponse(kabupaten), nil
 }
 
-func (s *KabupatenService) GetByProvinsiID(provinsiID uint) ([]dto.KabupatenResponse, error) {
+func (s *kabupatenService) GetByProvinsiID(provinsiID uint) ([]dto.KabupatenResponse, error) {
 	kabupaten, err := s.kabupatenRepository.GetByProvinsiID(provinsiID)
 	if err != nil {
 		return nil, err
@@ -53,7 +59,7 @@ func (s *KabupatenService) GetByProvinsiID(provinsiID uint) ([]dto.KabupatenResp
 	return responses, nil
 }
 
-func (s *KabupatenService) toResponse(kabupaten *entity.Kabupaten) *dto.KabupatenResponse {
+func (s *kabupatenService) toResponse(kabupaten *entity.Kabupaten) *dto.KabupatenResponse {
 	return &dto.KabupatenResponse{
 		ID:         kabupaten.ID,
 		Name:       kabupaten.Name,

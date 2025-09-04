@@ -13,6 +13,8 @@ const (
 	DB              = "db"
 	JWTService      = "JWTService"
 	DocumentService = "DocumentService"
+	UserService     = "UserService"
+	PelayananService = "PelayananService"
 
 	BASE_URL    = "http://localhost:8080"
 	UPLOAD_PATH = "./uploads"

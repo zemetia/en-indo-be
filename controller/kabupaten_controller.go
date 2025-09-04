@@ -8,27 +8,33 @@ import (
 	"github.com/zemetia/en-indo-be/service"
 )
 
-type KabupatenController struct {
-	kabupatenService *service.KabupatenService
+type KabupatenController interface {
+	GetAll(ctx *gin.Context)
+	GetByID(ctx *gin.Context)
+	GetByProvinsiID(ctx *gin.Context)
 }
 
-func NewKabupatenController(kabupatenService *service.KabupatenService) *KabupatenController {
-	return &KabupatenController{
+type kabupatenController struct {
+	kabupatenService service.KabupatenService
+}
+
+func NewKabupatenController(kabupatenService service.KabupatenService) KabupatenController {
+	return &kabupatenController{
 		kabupatenService: kabupatenService,
 	}
 }
 
-func (c *KabupatenController) GetAll(ctx *gin.Context) {
+func (c *kabupatenController) GetAll(ctx *gin.Context) {
 	kabupaten, err := c.kabupatenService.GetAll()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, kabupaten)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Success", "data": kabupaten})
 }
 
-func (c *KabupatenController) GetByID(ctx *gin.Context) {
+func (c *kabupatenController) GetByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -42,10 +48,10 @@ func (c *KabupatenController) GetByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, kabupaten)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Success", "data": kabupaten})
 }
 
-func (c *KabupatenController) GetByProvinsiID(ctx *gin.Context) {
+func (c *kabupatenController) GetByProvinsiID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -59,5 +65,5 @@ func (c *KabupatenController) GetByProvinsiID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, kabupaten)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Success", "data": kabupaten})
 }

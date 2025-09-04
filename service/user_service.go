@@ -1,11 +1,8 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"html/template"
-	"os"
-	"strings"
+	"fmt"
 	"time"
 
 	"mime/multipart"
@@ -15,8 +12,8 @@ import (
 	"github.com/zemetia/en-indo-be/entity"
 	"github.com/zemetia/en-indo-be/helpers"
 	"github.com/zemetia/en-indo-be/repository"
-	"github.com/zemetia/en-indo-be/utils"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type (
@@ -25,12 +22,15 @@ type (
 		GetAllUserWithPagination(ctx context.Context, req dto.PaginationRequest) (dto.UserPaginationResponse, error)
 		GetUserById(ctx context.Context, userId string) (dto.UserResponse, error)
 		GetByEmail(ctx context.Context, email string) (dto.UserResponse, error)
-		SendVerificationEmail(ctx context.Context, req dto.SendVerificationEmailRequest) error
-		VerifyEmail(ctx context.Context, req dto.VerifyEmailRequest) (dto.VerifyEmailResponse, error)
+		GetUserByPersonID(ctx context.Context, personID uuid.UUID) (dto.UserResponse, error)
 		Update(ctx context.Context, req dto.UserUpdateRequest, userId string) (dto.UserUpdateResponse, error)
 		Delete(ctx context.Context, userId string) error
 		Verify(ctx context.Context, req dto.UserLoginRequest) (dto.UserLoginResponse, error)
 		UploadProfileImage(ctx context.Context, file *multipart.FileHeader) (string, error)
+		CreateUserFromPerson(ctx context.Context, person *entity.Person) (*entity.User, error)
+		UpdateUserActivationStatus(ctx context.Context, personID uuid.UUID) error
+		ToggleUserActivationStatus(ctx context.Context, personID uuid.UUID, isActive bool) error
+		SetupPassword(ctx context.Context, userID uuid.UUID, request dto.PasswordSetupRequest) error
 	}
 
 	userService struct {
@@ -50,10 +50,6 @@ func NewUserService(userRepo repository.UserRepository, personRepo repository.Pe
 	}
 }
 
-const (
-	LOCAL_URL          = "http://localhost:3000"
-	VERIFY_EMAIL_ROUTE = "register/verify_email"
-)
 
 func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (dto.UserResponse, error) {
 	// Cek apakah email sudah terdaftar
@@ -74,19 +70,21 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 		return dto.UserResponse{}, dto.ErrCreateUser
 	}
 
-	imageUrl, err := s.UploadProfileImage(ctx, req.Image)
-	if err != nil {
-		return dto.UserResponse{}, dto.ErrUploadProfileImage
+	var imageUrl string
+	if req.Image != nil {
+		imageUrl, err = s.UploadProfileImage(ctx, req.Image)
+		if err != nil {
+			return dto.UserResponse{}, dto.ErrUploadProfileImage
+		}
 	}
 
 	user := entity.User{
-		ID:         uuid.New(),
-		Email:      req.Email,
-		Password:   string(hashedPassword),
-		ImageUrl:   imageUrl,
-		IsVerified: false,
-		PersonID:   req.PersonID,
-		Person:     *person,
+		ID:       uuid.New(),
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		ImageUrl: imageUrl,
+		PersonID: req.PersonID,
+		Person:   *person,
 	}
 
 	userReg, err := s.userRepo.RegisterUser(ctx, nil, user)
@@ -94,22 +92,15 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 		return dto.UserResponse{}, dto.ErrCreateUser
 	}
 
-	draftEmail, err := makeVerificationEmail(userReg.Email)
-	if err != nil {
-		return dto.UserResponse{}, err
-	}
-
-	err = utils.SendMail(userReg.Email, draftEmail["subject"], draftEmail["body"])
-	if err != nil {
-		return dto.UserResponse{}, err
-	}
 
 	return dto.UserResponse{
-		ID:         userReg.ID,
-		Email:      userReg.Email,
-		ImageUrl:   userReg.ImageUrl,
-		IsVerified: userReg.IsVerified,
-		PersonID:   userReg.PersonID,
+		ID:                        userReg.ID,
+		Email:                     userReg.Email,
+		ImageUrl:                  userReg.ImageUrl,
+		IsActive:                  userReg.IsActive,
+		HasChangedDefaultPassword: userReg.HasChangedDefaultPassword,
+		LastLoginAt:               userReg.LastLoginAt,
+		PersonID:                  userReg.PersonID,
 		Person: dto.PersonResponse{
 			ID:                userReg.Person.ID,
 			Nama:              userReg.Person.Nama,
@@ -143,115 +134,8 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 	}, nil
 }
 
-func makeVerificationEmail(receiverEmail string) (map[string]string, error) {
-	expired := time.Now().Add(time.Hour * 24).Format("2006-01-02 15:04:05")
-	plainText := receiverEmail + "_" + expired
-	token, err := utils.AESEncrypt(plainText)
-	if err != nil {
-		return nil, err
-	}
 
-	verifyLink := LOCAL_URL + "/" + VERIFY_EMAIL_ROUTE + "?token=" + token
 
-	readHtml, err := os.ReadFile("utils/email-template/base_mail.html")
-	if err != nil {
-		return nil, err
-	}
-
-	data := struct {
-		Email  string
-		Verify string
-	}{
-		Email:  receiverEmail,
-		Verify: verifyLink,
-	}
-
-	tmpl, err := template.New("custom").Parse(string(readHtml))
-	if err != nil {
-		return nil, err
-	}
-
-	var strMail bytes.Buffer
-	if err := tmpl.Execute(&strMail, data); err != nil {
-		return nil, err
-	}
-
-	draftEmail := map[string]string{
-		"subject": "Cakno - Go Gin Template",
-		"body":    strMail.String(),
-	}
-
-	return draftEmail, nil
-}
-
-func (s *userService) SendVerificationEmail(ctx context.Context, req dto.SendVerificationEmailRequest) error {
-	user, err := s.userRepo.GetByEmail(ctx, req.Email)
-	if err != nil {
-		return dto.ErrEmailNotFound
-	}
-
-	draftEmail, err := makeVerificationEmail(user.Email)
-	if err != nil {
-		return err
-	}
-
-	err = utils.SendMail(user.Email, draftEmail["subject"], draftEmail["body"])
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *userService) VerifyEmail(ctx context.Context, req dto.VerifyEmailRequest) (dto.VerifyEmailResponse, error) {
-	decryptedToken, err := utils.AESDecrypt(req.Token)
-	if err != nil {
-		return dto.VerifyEmailResponse{}, dto.ErrTokenInvalid
-	}
-
-	if !strings.Contains(decryptedToken, "_") {
-		return dto.VerifyEmailResponse{}, dto.ErrTokenInvalid
-	}
-
-	decryptedTokenSplit := strings.Split(decryptedToken, "_")
-	email := decryptedTokenSplit[0]
-	expired := decryptedTokenSplit[1]
-
-	now := time.Now()
-	expiredTime, err := time.Parse("2006-01-02 15:04:05", expired)
-	if err != nil {
-		return dto.VerifyEmailResponse{}, dto.ErrTokenInvalid
-	}
-
-	if expiredTime.Sub(now) < 0 {
-		return dto.VerifyEmailResponse{
-			Email:      email,
-			IsVerified: false,
-		}, dto.ErrTokenExpired
-	}
-
-	user, err := s.userRepo.GetByEmail(ctx, email)
-	if err != nil {
-		return dto.VerifyEmailResponse{}, dto.ErrUserNotFound
-	}
-
-	if user.IsVerified {
-		return dto.VerifyEmailResponse{}, dto.ErrAccountAlreadyVerified
-	}
-
-	err = s.userRepo.Update(ctx, &entity.User{
-		ID:         user.ID,
-		IsVerified: true,
-	})
-	if err != nil {
-		return dto.VerifyEmailResponse{}, dto.ErrUpdateUser
-	}
-
-	return dto.VerifyEmailResponse{
-		Email:      email,
-		IsVerified: true,
-	}, nil
-}
 
 func (s *userService) GetAllUserWithPagination(ctx context.Context, req dto.PaginationRequest) (dto.UserPaginationResponse, error) {
 	dataWithPaginate, err := s.userRepo.GetAllUserWithPagination(ctx, nil, req)
@@ -262,11 +146,13 @@ func (s *userService) GetAllUserWithPagination(ctx context.Context, req dto.Pagi
 	var datas []dto.UserResponse
 	for _, user := range dataWithPaginate.Users {
 		data := dto.UserResponse{
-			ID:         user.ID,
-			Email:      user.Email,
-			ImageUrl:   user.ImageUrl,
-			IsVerified: user.IsVerified,
-			PersonID:   user.PersonID,
+			ID:                        user.ID,
+			Email:                     user.Email,
+			ImageUrl:                  user.ImageUrl,
+			IsActive:                  user.IsActive,
+			HasChangedDefaultPassword: user.HasChangedDefaultPassword,
+			LastLoginAt:               user.LastLoginAt,
+			PersonID:                  user.PersonID,
 			Person: dto.PersonResponse{
 				ID:                user.Person.ID,
 				Nama:              user.Person.Nama,
@@ -320,11 +206,13 @@ func (s *userService) GetUserById(ctx context.Context, userId string) (dto.UserR
 	}
 
 	return dto.UserResponse{
-		ID:         user.ID,
-		Email:      user.Email,
-		ImageUrl:   user.ImageUrl,
-		IsVerified: user.IsVerified,
-		PersonID:   user.PersonID,
+		ID:                        user.ID,
+		Email:                     user.Email,
+		ImageUrl:                  user.ImageUrl,
+		IsActive:                  user.IsActive,
+		HasChangedDefaultPassword: user.HasChangedDefaultPassword,
+		LastLoginAt:               user.LastLoginAt,
+		PersonID:                  user.PersonID,
 		Person: dto.PersonResponse{
 			ID:                user.Person.ID,
 			Nama:              user.Person.Nama,
@@ -365,11 +253,60 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (dto.UserRes
 	}
 
 	return dto.UserResponse{
-		ID:         user.ID,
-		Email:      user.Email,
-		ImageUrl:   user.ImageUrl,
-		IsVerified: user.IsVerified,
-		PersonID:   user.PersonID,
+		ID:                        user.ID,
+		Email:                     user.Email,
+		ImageUrl:                  user.ImageUrl,
+		IsActive:                  user.IsActive,
+		HasChangedDefaultPassword: user.HasChangedDefaultPassword,
+		LastLoginAt:               user.LastLoginAt,
+		PersonID:                  user.PersonID,
+		Person: dto.PersonResponse{
+			ID:                user.Person.ID,
+			Nama:              user.Person.Nama,
+			NamaLain:          user.Person.NamaLain,
+			Gender:            user.Person.Gender,
+			TempatLahir:       user.Person.TempatLahir,
+			TanggalLahir:      user.Person.TanggalLahir.Format("2006-01-02"),
+			FaseHidup:         user.Person.FaseHidup,
+			StatusPerkawinan:  user.Person.StatusPerkawinan,
+			NamaPasangan:      user.Person.NamaPasangan,
+			PasanganID:        user.Person.PasanganID,
+			TanggalPerkawinan: user.Person.TanggalPerkawinan.Format("2006-01-02"),
+			Alamat:            user.Person.Alamat,
+			NomorTelepon:      user.Person.NomorTelepon,
+			Email:             user.Person.Email,
+			Ayah:              user.Person.Ayah,
+			Ibu:               user.Person.Ibu,
+			Kerinduan:         user.Person.Kerinduan,
+			KomitmenBerjemaat: user.Person.KomitmenBerjemaat,
+			Status:            user.Person.Status,
+			KodeJemaat:        user.Person.KodeJemaat,
+			ChurchID:          user.Person.ChurchID,
+			Church:            user.Person.Church.Name,
+			KabupatenID:       user.Person.KabupatenID,
+			Kabupaten:         user.Person.Kabupaten.Name,
+			CreatedAt:         user.Person.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:         user.Person.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *userService) GetUserByPersonID(ctx context.Context, personID uuid.UUID) (dto.UserResponse, error) {
+	user, err := s.userRepo.GetByPersonID(ctx, personID)
+	if err != nil {
+		return dto.UserResponse{}, dto.ErrUserNotFound
+	}
+
+	return dto.UserResponse{
+		ID:                        user.ID,
+		Email:                     user.Email,
+		ImageUrl:                  user.ImageUrl,
+		IsActive:                  user.IsActive,
+		HasChangedDefaultPassword: user.HasChangedDefaultPassword,
+		LastLoginAt:               user.LastLoginAt,
+		PersonID:                  user.PersonID,
 		Person: dto.PersonResponse{
 			ID:                user.Person.ID,
 			Nama:              user.Person.Nama,
@@ -438,7 +375,7 @@ func (s *userService) Update(ctx context.Context, req dto.UserUpdateRequest, use
 		ID:         user.ID.String(),
 		Email:      user.Email,
 		ImageUrl:   user.ImageUrl,
-		IsVerified: user.IsVerified,
+		IsActive:   user.IsActive,
 	}, nil
 }
 
@@ -456,19 +393,46 @@ func (s *userService) Delete(ctx context.Context, userId string) error {
 }
 
 func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto.UserLoginResponse, error) {
+	// Debug logging for login attempts
+	fmt.Printf("[DEBUG] Login attempt for email: %s\n", req.Email)
+	
 	check, flag, err := s.userRepo.CheckEmail(ctx, nil, req.Email)
 	if err != nil || !flag {
+		fmt.Printf("[DEBUG] Email not found: %s\n", req.Email)
 		return dto.UserLoginResponse{}, dto.ErrEmailNotFound
 	}
 
-	if !check.IsVerified {
-		return dto.UserLoginResponse{}, dto.ErrAccountNotVerified
+	fmt.Printf("[DEBUG] User found - ID: %s, IsActive: %t\n", check.ID, check.IsActive)
+
+	// Check if user is active
+	if !check.IsActive {
+		fmt.Printf("[DEBUG] User account inactive for email: %s\n", req.Email)
+		return dto.UserLoginResponse{}, dto.ErrUserInactive
+	}
+
+	// Check if user has active pelayanan assignments
+	hasActivePelayanan, err := s.userRepo.HasActivePelayanan(ctx, check.PersonID)
+	if err != nil {
+		fmt.Printf("[DEBUG] Error checking pelayanan for PersonID: %s, error: %v\n", check.PersonID, err)
+		return dto.UserLoginResponse{}, dto.ErrGetPelayanan
+	}
+	
+	fmt.Printf("[DEBUG] HasActivePelayanan: %t for PersonID: %s\n", hasActivePelayanan, check.PersonID)
+	
+	if !hasActivePelayanan {
+		// Auto-deactivate user if no pelayanan assignments
+		fmt.Printf("[DEBUG] No active pelayanan for PersonID: %s, deactivating user\n", check.PersonID)
+		s.userRepo.UpdateActivationStatus(ctx, check.ID, false)
+		return dto.UserLoginResponse{}, dto.ErrUserNoPelayanan
 	}
 
 	checkPassword, err := helpers.CheckPassword(check.Password, []byte(req.Password))
 	if err != nil || !checkPassword {
+		fmt.Printf("[DEBUG] Password check failed for email: %s, err: %v\n", req.Email, err)
 		return dto.UserLoginResponse{}, dto.ErrPasswordNotMatch
 	}
+	
+	fmt.Printf("[DEBUG] Password check successful for email: %s\n", req.Email)
 
 	pelayanan, err := s.personRepo.GetPelayananChurchByID(ctx, check.PersonID)
 	if err != nil {
@@ -482,22 +446,180 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 			Pelayanan:   p.Pelayanan.Pelayanan,
 			ChurchID:    p.ChurchID,
 			ChurchName:  p.Church.Name,
-			IsPic:       p.IsPic,
+			IsPic:       p.Pelayanan.IsPic,
 		})
 	}
+
+	// Detect first-time login and password setup requirements
+	isFirstTimeLogin := check.LastLoginAt == nil
+	requiresPasswordSetup := !check.HasChangedDefaultPassword
+	
+	// Generate password hint if needed
+	var defaultPasswordHint string
+	if requiresPasswordSetup {
+		defaultPasswordHint = "Your password is your birth date in DD/MM/YYYY format"
+	}
+
+	// Update last login timestamp
+	now := time.Now()
+	s.userRepo.Update(ctx, &entity.User{
+		ID:          check.ID,
+		LastLoginAt: &now,
+	})
 
 	token := s.jwtService.GenerateToken(check.ID.String(), check.Email, 24*3)
 
 	return dto.UserLoginResponse{
-		Token:      token,
-		Pelayanan:  pelayananResponses,
-		Nama:       check.Person.Nama,
-		ImageUrl:   check.ImageUrl,
-		IsVerified: check.IsVerified,
-		ExpiredAt:  time.Now().Add(time.Hour * 24 * 3),
+		Token:                 token,
+		Pelayanan:             pelayananResponses,
+		Nama:                  check.Person.Nama,
+		ImageUrl:              check.ImageUrl,
+		IsFirstTimeLogin:      isFirstTimeLogin,
+		RequiresPasswordSetup: requiresPasswordSetup,
+		DefaultPasswordHint:   defaultPasswordHint,
+		ExpiredAt:             time.Now().Add(time.Hour * 24 * 3),
 	}, nil
 }
 
 func (s *userService) UploadProfileImage(ctx context.Context, file *multipart.FileHeader) (string, error) {
 	return s.documentService.UploadImage(file)
+}
+
+// CreateUserFromPerson creates a new user automatically from person data when assigned to pelayanan
+func (s *userService) CreateUserFromPerson(ctx context.Context, person *entity.Person) (*entity.User, error) {
+	// Validate person has email
+	if person.Email == "" {
+		return nil, fmt.Errorf("person must have email to create user account")
+	}
+
+	// Check if user already exists
+	existingUser, err := s.userRepo.GetByEmail(ctx, person.Email)
+	if err == nil && existingUser != nil {
+		return existingUser, nil // User already exists, return existing user
+	}
+
+	// Generate password from birth date
+	password := helpers.GeneratePasswordFromBirthDate(person.TanggalLahir)
+
+	// Create new user
+	user := &entity.User{
+		ID:         uuid.New(),
+		Email:      person.Email,
+		Password:   password, // Will be hashed by BeforeCreate hook
+		ImageUrl:   "",
+		IsActive:   true,
+		PersonID:   person.ID,
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return user, nil
+}
+
+// UpdateUserActivationStatus updates user activation based on pelayanan assignments
+func (s *userService) UpdateUserActivationStatus(ctx context.Context, personID uuid.UUID) error {
+	// Get user by person ID
+	user, err := s.userRepo.GetByPersonID(ctx, personID)
+	if err != nil {
+		// If user doesn't exist, skip activation update
+		if err == gorm.ErrRecordNotFound {
+			return nil
+		}
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Check if user has active pelayanan assignments
+	hasActivePelayanan, err := s.userRepo.HasActivePelayanan(ctx, personID)
+	if err != nil {
+		return fmt.Errorf("failed to check pelayanan assignments: %w", err)
+	}
+
+	// Update activation status based on pelayanan assignments
+	newActiveStatus := hasActivePelayanan
+	if user.IsActive != newActiveStatus {
+		if err := s.userRepo.UpdateActivationStatus(ctx, user.ID, newActiveStatus); err != nil {
+			return fmt.Errorf("failed to update activation status: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ToggleUserActivationStatus toggles user activation status by person ID
+// Handles three scenarios: 1) No user exists - creates account, 2) User exists but inactive - activates, 3) User active - deactivates
+func (s *userService) ToggleUserActivationStatus(ctx context.Context, personID uuid.UUID, isActive bool) error {
+	// Get user by person ID
+	user, err := s.userRepo.GetByPersonID(ctx, personID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// User doesn't exist, create new account if activating
+			if isActive {
+				// Get person data to create user account
+				person, personErr := s.personRepo.GetByID(ctx, personID)
+				if personErr != nil {
+					return fmt.Errorf("failed to get person data: %w", personErr)
+				}
+				
+				// Create user account from person data
+				_, createErr := s.CreateUserFromPerson(ctx, person)
+				if createErr != nil {
+					return fmt.Errorf("failed to create user account: %w", createErr)
+				}
+				return nil
+			} else {
+				// Cannot deactivate non-existent account
+				return fmt.Errorf("cannot deactivate non-existent user account for person ID: %s", personID)
+			}
+		}
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// User exists, update activation status
+	if err := s.userRepo.UpdateActivationStatus(ctx, user.ID, isActive); err != nil {
+		return fmt.Errorf("failed to update activation status: %w", err)
+	}
+
+	return nil
+}
+
+// SetupPassword handles the password setup flow for first-time users
+func (s *userService) SetupPassword(ctx context.Context, userID uuid.UUID, request dto.PasswordSetupRequest) error {
+	// Get user by ID
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	switch request.Action {
+	case "change":
+		if request.NewPassword == "" {
+			return fmt.Errorf("new password is required when action is 'change'")
+		}
+
+		// Hash the new password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
+		}
+
+		// Update user with new password and mark as changed
+		user.Password = string(hashedPassword)
+		user.HasChangedDefaultPassword = true
+
+	case "keep":
+		// User chose to keep birth date password, just mark as acknowledged
+		user.HasChangedDefaultPassword = true
+
+	default:
+		return fmt.Errorf("invalid action: %s", request.Action)
+	}
+
+	// Update user in database
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return nil
 }

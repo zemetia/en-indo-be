@@ -10,7 +10,6 @@ type PersonPelayananGereja struct {
 	Pelayanan   Pelayanan `gorm:"foreignKey:PelayananID"`
 	ChurchID    uuid.UUID `gorm:"type:char(36);not null"`
 	Church      Church    `gorm:"foreignKey:ChurchID"`
-	IsPic       bool      `gorm:"type:boolean;not null; default:false"`
 
 	Timestamp
 }
