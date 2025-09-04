@@ -37,13 +37,13 @@ func (r *lifeGroupRepository) Create(lifeGroup *entity.LifeGroup) error {
 
 func (r *lifeGroupRepository) GetAll() ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("CoLeader").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").Find(&lifeGroups).Error
+	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").Find(&lifeGroups).Error
 	return lifeGroups, err
 }
 
 func (r *lifeGroupRepository) Search(ctx context.Context, search *dto.PersonSearchDto) ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	query := r.db.Preload("Church").Preload("Leader").Preload("CoLeader").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor")
+	query := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor")
 
 	if search.Name != nil {
 		query = query.Where("nama LIKE ?", "%"+*search.Name+"%")
@@ -67,7 +67,7 @@ func (r *lifeGroupRepository) Search(ctx context.Context, search *dto.PersonSear
 
 func (r *lifeGroupRepository) GetByID(id uuid.UUID) (*entity.LifeGroup, error) {
 	var lifeGroup entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("CoLeader").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").First(&lifeGroup, "id = ?", id).Error
+	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").First(&lifeGroup, "id = ?", id).Error
 	return &lifeGroup, err
 }
 
@@ -86,7 +86,7 @@ func (r *lifeGroupRepository) UpdateLeader(id uuid.UUID, leaderID uuid.UUID) err
 
 func (r *lifeGroupRepository) GetByChurchID(churchID uuid.UUID) ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("CoLeader").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
+	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
 		Where("church_id = ?", churchID).
 		Find(&lifeGroups).Error
 	return lifeGroups, err
@@ -95,7 +95,7 @@ func (r *lifeGroupRepository) GetByChurchID(churchID uuid.UUID) ([]entity.LifeGr
 
 func (r *lifeGroupRepository) GetByUserID(userID uuid.UUID) ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("CoLeader").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
+	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
 		Where("leader_id = ? OR co_leader_id = ?", userID, userID).
 		Find(&lifeGroups).Error
 	return lifeGroups, err
