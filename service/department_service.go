@@ -81,7 +81,6 @@ func (s *departmentService) GetByID(id uuid.UUID) (*dto.DepartmentResponse, erro
 	return s.toResponse(department), nil
 }
 
-
 func (s *departmentService) Update(id uuid.UUID, req *dto.DepartmentRequest) (*dto.DepartmentResponse, error) {
 	department, err := s.departmentRepository.GetByID(id)
 	if err != nil {

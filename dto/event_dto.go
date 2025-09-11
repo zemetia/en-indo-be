@@ -29,16 +29,16 @@ type CreateEventRequest struct {
 }
 
 type CreateRecurrenceRuleRequest struct {
-	Frequency  string    `json:"frequency" validate:"required,oneof=DAILY WEEKLY MONTHLY YEARLY"`
-	Interval   int       `json:"interval,omitempty"`
-	ByWeekday  []string  `json:"byWeekday,omitempty"`
-	ByMonthDay []int64   `json:"byMonthDay,omitempty"`
-	ByMonth    []int64   `json:"byMonth,omitempty"`
-	BySetPos   []int64   `json:"bySetPos,omitempty"`   // e.g. [1,-1] for first/last occurrence
-	WeekStart  string    `json:"weekStart,omitempty"` // week start day (MO, SU, etc.)
-	ByYearDay  []int64   `json:"byYearDay,omitempty"` // day of year (1-366)
-	Count      *int      `json:"count,omitempty"`
-	Until      *string   `json:"until,omitempty"`
+	Frequency  string   `json:"frequency" validate:"required,oneof=DAILY WEEKLY MONTHLY YEARLY"`
+	Interval   int      `json:"interval,omitempty"`
+	ByWeekday  []string `json:"byWeekday,omitempty"`
+	ByMonthDay []int64  `json:"byMonthDay,omitempty"`
+	ByMonth    []int64  `json:"byMonth,omitempty"`
+	BySetPos   []int64  `json:"bySetPos,omitempty"`  // e.g. [1,-1] for first/last occurrence
+	WeekStart  string   `json:"weekStart,omitempty"` // week start day (MO, SU, etc.)
+	ByYearDay  []int64  `json:"byYearDay,omitempty"` // day of year (1-366)
+	Count      *int     `json:"count,omitempty"`
+	Until      *string  `json:"until,omitempty"`
 }
 
 // Event update request
@@ -66,9 +66,9 @@ type UpdateEventRequest struct {
 type RecurringUpdateType string
 
 const (
-	UpdateThisEvent     RecurringUpdateType = "single"
-	UpdateAllEvents     RecurringUpdateType = "all"
-	UpdateFutureEvents  RecurringUpdateType = "future"
+	UpdateThisEvent    RecurringUpdateType = "single"
+	UpdateAllEvents    RecurringUpdateType = "all"
+	UpdateFutureEvents RecurringUpdateType = "future"
 )
 
 type UpdateRecurringEventRequest struct {
@@ -81,14 +81,14 @@ type UpdateRecurringEventRequest struct {
 
 // Event occurrence for individual recurring event instance
 type EventOccurrenceResponse struct {
-	EventID         uuid.UUID  `json:"eventId"`
-	OccurrenceDate  time.Time  `json:"occurrenceDate"`
-	StartDatetime   time.Time  `json:"startDatetime"`
-	EndDatetime     time.Time  `json:"endDatetime"`
-	IsException     bool       `json:"isException"`
-	IsSkipped       bool       `json:"isSkipped"`
-	ExceptionNotes  string     `json:"exceptionNotes,omitempty"`
-	OriginalEvent   *EventResponse `json:"originalEvent,omitempty"`
+	EventID        uuid.UUID      `json:"eventId"`
+	OccurrenceDate time.Time      `json:"occurrenceDate"`
+	StartDatetime  time.Time      `json:"startDatetime"`
+	EndDatetime    time.Time      `json:"endDatetime"`
+	IsException    bool           `json:"isException"`
+	IsSkipped      bool           `json:"isSkipped"`
+	ExceptionNotes string         `json:"exceptionNotes,omitempty"`
+	OriginalEvent  *EventResponse `json:"originalEvent,omitempty"`
 }
 
 // Main event response
@@ -118,17 +118,17 @@ type EventResponse struct {
 }
 
 type RecurrenceRuleResponse struct {
-	ID         uuid.UUID      `json:"id"`
-	Frequency  string         `json:"frequency"`
-	Interval   int            `json:"interval"`
-	ByWeekday  []string `json:"byWeekday"`
-	ByMonthDay []int64  `json:"byMonthDay"`
-	ByMonth    []int64  `json:"byMonth"`
-	BySetPos   []int64  `json:"bySetPos"`
-	WeekStart  string   `json:"weekStart"`
-	ByYearDay  []int64  `json:"byYearDay"`
-	Count      *int           `json:"count"`
-	Until      *time.Time     `json:"until"`
+	ID         uuid.UUID  `json:"id"`
+	Frequency  string     `json:"frequency"`
+	Interval   int        `json:"interval"`
+	ByWeekday  []string   `json:"byWeekday"`
+	ByMonthDay []int64    `json:"byMonthDay"`
+	ByMonth    []int64    `json:"byMonth"`
+	BySetPos   []int64    `json:"bySetPos"`
+	WeekStart  string     `json:"weekStart"`
+	ByYearDay  []int64    `json:"byYearDay"`
+	Count      *int       `json:"count"`
+	Until      *time.Time `json:"until"`
 }
 
 type LaguResponse struct {
@@ -145,18 +145,18 @@ type GetEventOccurrencesRequest struct {
 
 // Request for updating single occurrence
 type UpdateOccurrenceRequest struct {
-	OccurrenceDate string              `json:"occurrenceDate" validate:"required"`
-	StartTime      *string             `json:"startTime,omitempty"`
-	EndTime        *string             `json:"endTime,omitempty"`
-	Event          UpdateEventRequest  `json:"event"`
+	OccurrenceDate string             `json:"occurrenceDate" validate:"required"`
+	StartTime      *string            `json:"startTime,omitempty"`
+	EndTime        *string            `json:"endTime,omitempty"`
+	Event          UpdateEventRequest `json:"event"`
 }
 
 // Request for updating future occurrences
 type UpdateFutureOccurrencesRequest struct {
-	FromDate       string              `json:"fromDate" validate:"required"`
-	StartTime      *string             `json:"startTime,omitempty"`
-	EndTime        *string             `json:"endTime,omitempty"`
-	Event          UpdateEventRequest  `json:"event"`
+	FromDate       string                       `json:"fromDate" validate:"required"`
+	StartTime      *string                      `json:"startTime,omitempty"`
+	EndTime        *string                      `json:"endTime,omitempty"`
+	Event          UpdateEventRequest           `json:"event"`
 	RecurrenceRule *CreateRecurrenceRuleRequest `json:"recurrenceRule,omitempty"`
 }
 
@@ -176,12 +176,12 @@ type EventListResponse struct {
 
 // Event filter request
 type EventFilterRequest struct {
-	Type       string `form:"type,omitempty"`
-	IsPublic   *bool  `form:"isPublic,omitempty"`
-	StartDate  string `form:"startDate,omitempty"`
-	EndDate    string `form:"endDate,omitempty"`
-	Search     string `form:"search,omitempty"`
-	Page       int    `form:"page,omitempty"`
-	Limit      int    `form:"limit,omitempty"`
-	Timezone   string `form:"timezone,omitempty"`
+	Type      string `form:"type,omitempty"`
+	IsPublic  *bool  `form:"isPublic,omitempty"`
+	StartDate string `form:"startDate,omitempty"`
+	EndDate   string `form:"endDate,omitempty"`
+	Search    string `form:"search,omitempty"`
+	Page      int    `form:"page,omitempty"`
+	Limit     int    `form:"limit,omitempty"`
+	Timezone  string `form:"timezone,omitempty"`
 }

@@ -34,7 +34,7 @@ func Seeder(db *gorm.DB) error {
 
 	// Temporarily disabled user seeders due to foreign key constraint issues
 	// Users and lifegroups can be created manually for testing
-	// 
+	//
 	// if err := seeds.LifeGroupUserSeeder(db); err != nil {
 	//	return err
 	// }

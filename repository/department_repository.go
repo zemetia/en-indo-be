@@ -40,7 +40,6 @@ func (r *departmentRepository) GetByID(id uuid.UUID) (*entity.Department, error)
 	return &department, err
 }
 
-
 func (r *departmentRepository) Update(department *entity.Department) error {
 	return r.db.Save(department).Error
 }

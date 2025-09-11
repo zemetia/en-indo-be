@@ -41,7 +41,7 @@ func Authenticate(jwtService service.JWTService, userService service.UserService
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
-		
+
 		// Get user data to extract PersonID
 		user, err := userService.GetUserById(ctx, userId)
 		if err != nil {
@@ -49,10 +49,17 @@ func Authenticate(jwtService service.JWTService, userService service.UserService
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
-		
+
 		ctx.Set("token", authHeader)
 		ctx.Set("user_id", userId)
-		ctx.Set("person_id", user.PersonID.String())
+		
+		// Only set person_id if it's not an empty UUID
+		emptyUUID := "00000000-0000-0000-0000-000000000000"
+		personIDStr := user.PersonID.String()
+		if personIDStr != emptyUUID {
+			ctx.Set("person_id", personIDStr)
+		}
+		
 		ctx.Next()
 	}
 }

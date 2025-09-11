@@ -19,6 +19,7 @@ func Person(route *gin.Engine, injector *do.Injector) {
 		// Semua route person memerlukan autentikasi
 		routes.POST("", middleware.Authenticate(jwtService, userService), personController.Create)
 		routes.GET("", middleware.Authenticate(jwtService, userService), personController.GetAll)
+		routes.GET("/by-pic-lifegroup-churches", middleware.Authenticate(jwtService, userService), personController.GetByPICLifegroupChurches)
 		routes.GET("/:id", middleware.Authenticate(jwtService, userService), personController.GetByID)
 		routes.GET("/user/:user_id", middleware.Authenticate(jwtService, userService), personController.GetByUserID)
 		routes.PUT("/:id", middleware.Authenticate(jwtService, userService), personController.Update)

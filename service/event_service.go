@@ -17,7 +17,7 @@ type EventService interface {
 	UpdateEvent(id uuid.UUID, req *dto.UpdateEventRequest) (*dto.EventResponse, error)
 	DeleteEvent(id uuid.UUID) error
 	ListEvents(req *dto.EventFilterRequest) (*dto.EventListResponse, error)
-	
+
 	// Recurring event operations
 	UpdateRecurringEvent(id uuid.UUID, req *dto.UpdateRecurringEventRequest) error
 	UpdateSingleOccurrence(id uuid.UUID, req *dto.UpdateOccurrenceRequest) error
@@ -25,7 +25,7 @@ type EventService interface {
 	DeleteOccurrence(id uuid.UUID, req *dto.DeleteOccurrenceRequest) error
 	GetEventOccurrences(id uuid.UUID, req *dto.GetEventOccurrencesRequest) ([]dto.EventOccurrenceResponse, error)
 	GetOccurrencesInRange(req *dto.GetEventOccurrencesRequest) ([]dto.EventOccurrenceResponse, error)
-	
+
 	// Validation and utility methods
 	ValidateRecurrenceRule(rule *dto.CreateRecurrenceRuleRequest) error
 	GetNextOccurrence(id uuid.UUID, after time.Time) (*time.Time, error)
@@ -49,40 +49,40 @@ func (s *eventService) CreateEvent(req *dto.CreateEventRequest) (*dto.EventRespo
 	if err != nil {
 		return nil, fmt.Errorf("invalid event date format: %w", err)
 	}
-	
+
 	startTime, err := time.Parse("15:04", req.StartTime)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start time format: %w", err)
 	}
-	
+
 	endTime, err := time.Parse("15:04", req.EndTime)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end time format: %w", err)
 	}
-	
+
 	// Combine date and time
 	startDateTime := time.Date(eventDate.Year(), eventDate.Month(), eventDate.Day(),
 		startTime.Hour(), startTime.Minute(), 0, 0, time.UTC)
 	endDateTime := time.Date(eventDate.Year(), eventDate.Month(), eventDate.Day(),
 		endTime.Hour(), endTime.Minute(), 0, 0, time.UTC)
-	
+
 	// Create event entity
 	event := &entity.Event{
 		Title:                 req.Title,
-		BannerImage:          req.BannerImage,
-		Description:          req.Description,
-		Capacity:             req.Capacity,
-		Type:                 req.Type,
-		EventDate:            eventDate,
-		EventLocation:        req.EventLocation,
-		StartDatetime:        startDateTime,
-		EndDatetime:          endDateTime,
-		AllDay:               req.AllDay,
-		Timezone:             req.Timezone,
-		IsPublic:             req.IsPublic,
+		BannerImage:           req.BannerImage,
+		Description:           req.Description,
+		Capacity:              req.Capacity,
+		Type:                  req.Type,
+		EventDate:             eventDate,
+		EventLocation:         req.EventLocation,
+		StartDatetime:         startDateTime,
+		EndDatetime:           endDateTime,
+		AllDay:                req.AllDay,
+		Timezone:              req.Timezone,
+		IsPublic:              req.IsPublic,
 		DiscipleshipJourneyID: req.DiscipleshipJourneyID,
 	}
-	
+
 	// Handle recurrence rule
 	if req.RecurrenceRule != nil {
 		rule, err := s.createRecurrenceRuleEntity(req.RecurrenceRule)
@@ -91,17 +91,17 @@ func (s *eventService) CreateEvent(req *dto.CreateEventRequest) (*dto.EventRespo
 		}
 		event.RecurrenceRule = rule
 	}
-	
+
 	// Set default capacity if not provided
 	if event.Capacity == 0 {
 		event.Capacity = 99999
 	}
-	
+
 	// Create event
 	if err := s.eventRepo.Create(event); err != nil {
 		return nil, fmt.Errorf("failed to create event: %w", err)
 	}
-	
+
 	return s.entityToResponse(event), nil
 }
 
@@ -110,7 +110,7 @@ func (s *eventService) GetEvent(id uuid.UUID) (*dto.EventResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get event: %w", err)
 	}
-	
+
 	return s.entityToResponse(event), nil
 }
 
@@ -119,7 +119,7 @@ func (s *eventService) UpdateEvent(id uuid.UUID, req *dto.UpdateEventRequest) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to get event: %w", err)
 	}
-	
+
 	// Update fields if provided
 	if req.Title != nil {
 		event.Title = *req.Title
@@ -145,13 +145,13 @@ func (s *eventService) UpdateEvent(id uuid.UUID, req *dto.UpdateEventRequest) (*
 	if req.DiscipleshipJourneyID != nil {
 		event.DiscipleshipJourneyID = req.DiscipleshipJourneyID
 	}
-	
+
 	// Handle date/time updates
 	if req.EventDate != nil || req.StartTime != nil || req.EndTime != nil {
 		eventDateStr := event.EventDate.Format("2006-01-02")
 		startTimeStr := event.StartDatetime.Format("15:04")
 		endTimeStr := event.EndDatetime.Format("15:04")
-		
+
 		if req.EventDate != nil {
 			eventDateStr = *req.EventDate
 		}
@@ -161,41 +161,41 @@ func (s *eventService) UpdateEvent(id uuid.UUID, req *dto.UpdateEventRequest) (*
 		if req.EndTime != nil {
 			endTimeStr = *req.EndTime
 		}
-		
+
 		eventDate, err := time.Parse("2006-01-02", eventDateStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid event date format: %w", err)
 		}
-		
+
 		startTime, err := time.Parse("15:04", startTimeStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid start time format: %w", err)
 		}
-		
+
 		endTime, err := time.Parse("15:04", endTimeStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid end time format: %w", err)
 		}
-		
+
 		event.EventDate = eventDate
 		event.StartDatetime = time.Date(eventDate.Year(), eventDate.Month(), eventDate.Day(),
 			startTime.Hour(), startTime.Minute(), 0, 0, time.UTC)
 		event.EndDatetime = time.Date(eventDate.Year(), eventDate.Month(), eventDate.Day(),
 			endTime.Hour(), endTime.Minute(), 0, 0, time.UTC)
 	}
-	
+
 	if req.AllDay != nil {
 		event.AllDay = *req.AllDay
 	}
 	if req.Timezone != nil {
 		event.Timezone = *req.Timezone
 	}
-	
+
 	// Update event
 	if err := s.eventRepo.Update(event); err != nil {
 		return nil, fmt.Errorf("failed to update event: %w", err)
 	}
-	
+
 	return s.entityToResponse(event), nil
 }
 
@@ -214,7 +214,7 @@ func (s *eventService) ListEvents(req *dto.EventFilterRequest) (*dto.EventListRe
 		Limit:    req.Limit,
 		Offset:   (req.Page - 1) * req.Limit,
 	}
-	
+
 	// Set defaults
 	if filters.Limit == 0 {
 		filters.Limit = 20
@@ -222,17 +222,17 @@ func (s *eventService) ListEvents(req *dto.EventFilterRequest) (*dto.EventListRe
 	if req.Page == 0 {
 		req.Page = 1
 	}
-	
+
 	events, total, err := s.eventRepo.List(filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	
+
 	responses := make([]dto.EventResponse, len(events))
 	for i, event := range events {
 		responses[i] = *s.entityToResponse(&event)
 	}
-	
+
 	return &dto.EventListResponse{
 		Events:     responses,
 		TotalCount: int(total),
@@ -246,11 +246,11 @@ func (s *eventService) UpdateRecurringEvent(id uuid.UUID, req *dto.UpdateRecurri
 	if err != nil {
 		return fmt.Errorf("failed to get event: %w", err)
 	}
-	
+
 	if event.RecurrenceRule == nil {
 		return fmt.Errorf("event is not recurring")
 	}
-	
+
 	switch req.UpdateType {
 	case dto.UpdateThisEvent:
 		return s.updateSingleOccurrenceFromRecurring(event, req)
@@ -268,16 +268,16 @@ func (s *eventService) DeleteOccurrence(id uuid.UUID, req *dto.DeleteOccurrenceR
 	if err != nil {
 		return fmt.Errorf("failed to get event: %w", err)
 	}
-	
+
 	if event.RecurrenceRule == nil {
 		return fmt.Errorf("event is not recurring")
 	}
-	
+
 	occurrenceDate, err := time.Parse("2006-01-02", req.OccurrenceDate)
 	if err != nil {
 		return fmt.Errorf("invalid occurrence date format: %w", err)
 	}
-	
+
 	switch req.DeleteType {
 	case "single":
 		return s.skipSingleOccurrence(event, occurrenceDate)
@@ -293,17 +293,17 @@ func (s *eventService) GetEventOccurrences(id uuid.UUID, req *dto.GetEventOccurr
 	if err != nil {
 		return nil, fmt.Errorf("failed to get event: %w", err)
 	}
-	
+
 	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start date format: %w", err)
 	}
-	
+
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end date format: %w", err)
 	}
-	
+
 	return s.generateOccurrences(event, startDate, endDate)
 }
 
@@ -312,20 +312,20 @@ func (s *eventService) GetOccurrencesInRange(req *dto.GetEventOccurrencesRequest
 	if err != nil {
 		return nil, fmt.Errorf("invalid start date format: %w", err)
 	}
-	
+
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end date format: %w", err)
 	}
-	
+
 	// Get all events that could have occurrences in this range
 	events, err := s.eventRepo.GetEventsWithRecurrenceInRange(startDate, endDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recurring events: %w", err)
 	}
-	
+
 	var allOccurrences []dto.EventOccurrenceResponse
-	
+
 	for _, event := range events {
 		occurrences, err := s.generateOccurrences(&event, startDate, endDate)
 		if err != nil {
@@ -333,7 +333,7 @@ func (s *eventService) GetOccurrencesInRange(req *dto.GetEventOccurrencesRequest
 		}
 		allOccurrences = append(allOccurrences, occurrences...)
 	}
-	
+
 	return allOccurrences, nil
 }
 
@@ -345,22 +345,22 @@ func (s *eventService) createRecurrenceRuleEntity(req *dto.CreateRecurrenceRuleR
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert ByWeekday to JSON: %w", err)
 	}
-	
+
 	byMonthDayJSON, err := s.sliceToJSON(req.ByMonthDay)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert ByMonthDay to JSON: %w", err)
 	}
-	
+
 	byMonthJSON, err := s.sliceToJSON(req.ByMonth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert ByMonth to JSON: %w", err)
 	}
-	
+
 	bySetPosJSON, err := s.sliceToJSON(req.BySetPos)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert BySetPos to JSON: %w", err)
 	}
-	
+
 	byYearDayJSON, err := s.sliceToJSON(req.ByYearDay)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert ByYearDay to JSON: %w", err)
@@ -377,15 +377,15 @@ func (s *eventService) createRecurrenceRuleEntity(req *dto.CreateRecurrenceRuleR
 		ByYearDay:  byYearDayJSON,
 		Count:      req.Count,
 	}
-	
+
 	if rule.Interval == 0 {
 		rule.Interval = 1
 	}
-	
+
 	if rule.WeekStart == "" {
 		rule.WeekStart = "MO" // Default to Monday
 	}
-	
+
 	if req.Until != nil {
 		until, err := time.Parse("2006-01-02", *req.Until)
 		if err != nil {
@@ -393,62 +393,62 @@ func (s *eventService) createRecurrenceRuleEntity(req *dto.CreateRecurrenceRuleR
 		}
 		rule.Until = &until
 	}
-	
+
 	// Validate the rule
 	if err := s.recurrenceGenerator.ValidateRecurrenceRule(rule); err != nil {
 		return nil, fmt.Errorf("invalid recurrence rule: %w", err)
 	}
-	
+
 	return rule, nil
 }
 
 func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse {
 	response := &dto.EventResponse{
 		ID:                    event.ID,
-		Title:                event.Title,
-		BannerImage:          event.BannerImage,
-		Description:          event.Description,
-		Capacity:             event.Capacity,
-		Type:                 event.Type,
-		EventDate:            event.EventDate,
-		EventLocation:        event.EventLocation,
-		StartDatetime:        event.StartDatetime,
-		EndDatetime:          event.EndDatetime,
-		AllDay:               event.AllDay,
-		Timezone:             event.Timezone,
-		IsPublic:             event.IsPublic,
+		Title:                 event.Title,
+		BannerImage:           event.BannerImage,
+		Description:           event.Description,
+		Capacity:              event.Capacity,
+		Type:                  event.Type,
+		EventDate:             event.EventDate,
+		EventLocation:         event.EventLocation,
+		StartDatetime:         event.StartDatetime,
+		EndDatetime:           event.EndDatetime,
+		AllDay:                event.AllDay,
+		Timezone:              event.Timezone,
+		IsPublic:              event.IsPublic,
 		DiscipleshipJourneyID: event.DiscipleshipJourneyID,
-		CreatedAt:            event.CreatedAt,
-		UpdatedAt:            event.UpdatedAt,
+		CreatedAt:             event.CreatedAt,
+		UpdatedAt:             event.UpdatedAt,
 	}
-	
+
 	if event.RecurrenceRule != nil {
 		// Convert JSON strings to slices
 		byWeekday, err := s.jsonToStringSlice(event.RecurrenceRule.ByWeekday)
 		if err != nil {
 			byWeekday = []string{} // Default to empty slice on error
 		}
-		
+
 		byMonthDay, err := s.jsonToInt64Slice(event.RecurrenceRule.ByMonthDay)
 		if err != nil {
 			byMonthDay = []int64{} // Default to empty slice on error
 		}
-		
+
 		byMonth, err := s.jsonToInt64Slice(event.RecurrenceRule.ByMonth)
 		if err != nil {
 			byMonth = []int64{} // Default to empty slice on error
 		}
-		
+
 		bySetPos, err := s.jsonToInt64Slice(event.RecurrenceRule.BySetPos)
 		if err != nil {
 			bySetPos = []int64{} // Default to empty slice on error
 		}
-		
+
 		byYearDay, err := s.jsonToInt64Slice(event.RecurrenceRule.ByYearDay)
 		if err != nil {
 			byYearDay = []int64{} // Default to empty slice on error
 		}
-		
+
 		response.RecurrenceRule = &dto.RecurrenceRuleResponse{
 			ID:         event.RecurrenceRule.ID,
 			Frequency:  event.RecurrenceRule.Frequency,
@@ -463,7 +463,7 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 			Until:      event.RecurrenceRule.Until,
 		}
 	}
-	
+
 	if len(event.Lagu) > 0 {
 		laguResponses := make([]dto.LaguResponse, len(event.Lagu))
 		for i, lagu := range event.Lagu {
@@ -474,23 +474,23 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 		}
 		response.Lagu = laguResponses
 	}
-	
+
 	return response
 }
 
 func (s *eventService) generateOccurrences(event *entity.Event, startDate, endDate time.Time) ([]dto.EventOccurrenceResponse, error) {
 	var occurrenceResponses []dto.EventOccurrenceResponse
-	
+
 	// Get exceptions for this event
 	exceptions, err := s.eventRepo.GetRecurrenceExceptions(event.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recurrence exceptions: %w", err)
 	}
-	
+
 	if event.RecurrenceRule == nil {
 		// Single event - check if it's in range
-		if (event.EventDate.Equal(startDate) || event.EventDate.After(startDate)) && 
-		   (event.EventDate.Equal(endDate) || event.EventDate.Before(endDate)) {
+		if (event.EventDate.Equal(startDate) || event.EventDate.After(startDate)) &&
+			(event.EventDate.Equal(endDate) || event.EventDate.Before(endDate)) {
 			occurrenceResponses = append(occurrenceResponses, dto.EventOccurrenceResponse{
 				EventID:        event.ID,
 				OccurrenceDate: event.EventDate,
@@ -503,32 +503,32 @@ func (s *eventService) generateOccurrences(event *entity.Event, startDate, endDa
 		}
 		return occurrenceResponses, nil
 	}
-	
+
 	// Use the RecurrenceGenerator for recurring events
 	occurrenceDates, err := s.recurrenceGenerator.GenerateOccurrences(event, event.RecurrenceRule, startDate, endDate, exceptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate occurrences: %w", err)
 	}
-	
+
 	// Create exception map for quick lookups
 	exceptionMap := make(map[string]*entity.RecurrenceException)
 	for i := range exceptions {
 		dateKey := exceptions[i].ExceptionDate.Format("2006-01-02")
 		exceptionMap[dateKey] = &exceptions[i]
 	}
-	
+
 	// Convert generated dates to response objects
 	for _, occurrenceDate := range occurrenceDates {
 		dateKey := occurrenceDate.Format("2006-01-02")
 		exception := exceptionMap[dateKey]
-		
+
 		// Calculate start and end times for this occurrence
 		duration := event.EndDatetime.Sub(event.StartDatetime)
 		startTime := time.Date(occurrenceDate.Year(), occurrenceDate.Month(), occurrenceDate.Day(),
 			event.StartDatetime.Hour(), event.StartDatetime.Minute(), event.StartDatetime.Second(),
 			event.StartDatetime.Nanosecond(), event.StartDatetime.Location())
 		endTime := startTime.Add(duration)
-		
+
 		// Use exception override times if available
 		if exception != nil {
 			if exception.OverrideStart != nil {
@@ -538,7 +538,7 @@ func (s *eventService) generateOccurrences(event *entity.Event, startDate, endDa
 				endTime = *exception.OverrideEnd
 			}
 		}
-		
+
 		occurrenceResponses = append(occurrenceResponses, dto.EventOccurrenceResponse{
 			EventID:        event.ID,
 			OccurrenceDate: occurrenceDate,
@@ -555,7 +555,7 @@ func (s *eventService) generateOccurrences(event *entity.Event, startDate, endDa
 			OriginalEvent: s.entityToResponse(event),
 		})
 	}
-	
+
 	return occurrenceResponses, nil
 }
 
@@ -610,7 +610,7 @@ func (s *eventService) ValidateRecurrenceRule(rule *dto.CreateRecurrenceRuleRequ
 	byMonthJSON, _ := s.sliceToJSON(rule.ByMonth)
 	bySetPosJSON, _ := s.sliceToJSON(rule.BySetPos)
 	byYearDayJSON, _ := s.sliceToJSON(rule.ByYearDay)
-	
+
 	entityRule := &entity.RecurrenceRule{
 		Frequency:  rule.Frequency,
 		Interval:   rule.Interval,
@@ -648,7 +648,7 @@ func (s *eventService) updateSingleOccurrenceFromRecurring(event *entity.Event, 
 	if err != nil {
 		return fmt.Errorf("invalid occurrence date format: %w", err)
 	}
-	
+
 	return s.createOrUpdateException(event, occurrenceDate, req.StartTime, req.EndTime, &req.Event, entity.ModificationTypeSingle)
 }
 
@@ -663,7 +663,7 @@ func (s *eventService) createOrUpdateException(event *entity.Event, occurrenceDa
 			ModificationType: modificationType,
 			IsSkipped:        false,
 		}
-		
+
 		// Store original times for reference
 		originalStart := time.Date(occurrenceDate.Year(), occurrenceDate.Month(), occurrenceDate.Day(),
 			event.StartDatetime.Hour(), event.StartDatetime.Minute(), event.StartDatetime.Second(),
@@ -671,11 +671,11 @@ func (s *eventService) createOrUpdateException(event *entity.Event, occurrenceDa
 		originalEnd := time.Date(occurrenceDate.Year(), occurrenceDate.Month(), occurrenceDate.Day(),
 			event.EndDatetime.Hour(), event.EndDatetime.Minute(), event.EndDatetime.Second(),
 			event.EndDatetime.Nanosecond(), event.EndDatetime.Location())
-		
+
 		exception.OriginalStartTime = &originalStart
 		exception.OriginalEndTime = &originalEnd
 	}
-	
+
 	// Apply time overrides if provided
 	if startTime != nil && endTime != nil {
 		parsedStartTime, err := time.Parse("15:04", *startTime)
@@ -686,26 +686,26 @@ func (s *eventService) createOrUpdateException(event *entity.Event, occurrenceDa
 		if err != nil {
 			return fmt.Errorf("invalid end time format: %w", err)
 		}
-		
+
 		// Validate that start time is before end time
 		if !parsedStartTime.Before(parsedEndTime) {
 			return fmt.Errorf("start time must be before end time")
 		}
-		
+
 		startDateTime := time.Date(occurrenceDate.Year(), occurrenceDate.Month(), occurrenceDate.Day(),
 			parsedStartTime.Hour(), parsedStartTime.Minute(), 0, 0, time.UTC)
 		endDateTime := time.Date(occurrenceDate.Year(), occurrenceDate.Month(), occurrenceDate.Day(),
 			parsedEndTime.Hour(), parsedEndTime.Minute(), 0, 0, time.UTC)
-		
+
 		exception.OverrideStart = &startDateTime
 		exception.OverrideEnd = &endDateTime
 	}
-	
+
 	// Add notes if there are other changes
 	if eventUpdates.Title != nil || eventUpdates.Description != nil || eventUpdates.EventLocation != nil {
 		exception.Notes = fmt.Sprintf("Modified on %s", time.Now().Format("2006-01-02 15:04:05"))
 	}
-	
+
 	// Save the exception
 	if exception.ID == uuid.Nil {
 		return s.eventRepo.CreateRecurrenceException(exception)
@@ -717,20 +717,20 @@ func (s *eventService) createNewSeriesFromDate(originalEvent *entity.Event, from
 	// Build create request for new series
 	createReq := &dto.CreateEventRequest{
 		Title:                 originalEvent.Title,
-		BannerImage:          originalEvent.BannerImage,
-		Description:          originalEvent.Description,
-		Capacity:             originalEvent.Capacity,
-		Type:                 originalEvent.Type,
-		EventDate:            fromDate.Format("2006-01-02"),
-		EventLocation:        originalEvent.EventLocation,
-		StartTime:            originalEvent.StartDatetime.Format("15:04"),
-		EndTime:              originalEvent.EndDatetime.Format("15:04"),
-		AllDay:               originalEvent.AllDay,
-		Timezone:             originalEvent.Timezone,
-		IsPublic:             originalEvent.IsPublic,
+		BannerImage:           originalEvent.BannerImage,
+		Description:           originalEvent.Description,
+		Capacity:              originalEvent.Capacity,
+		Type:                  originalEvent.Type,
+		EventDate:             fromDate.Format("2006-01-02"),
+		EventLocation:         originalEvent.EventLocation,
+		StartTime:             originalEvent.StartDatetime.Format("15:04"),
+		EndTime:               originalEvent.EndDatetime.Format("15:04"),
+		AllDay:                originalEvent.AllDay,
+		Timezone:              originalEvent.Timezone,
+		IsPublic:              originalEvent.IsPublic,
 		DiscipleshipJourneyID: originalEvent.DiscipleshipJourneyID,
 	}
-	
+
 	// Apply updates from request
 	if eventUpdates.Title != nil {
 		createReq.Title = *eventUpdates.Title
@@ -750,7 +750,7 @@ func (s *eventService) createNewSeriesFromDate(originalEvent *entity.Event, from
 	if endTime != nil {
 		createReq.EndTime = *endTime
 	}
-	
+
 	// Set up recurrence rule - use provided rule or copy from original
 	if recurrenceRule != nil {
 		createReq.RecurrenceRule = recurrenceRule
@@ -761,7 +761,7 @@ func (s *eventService) createNewSeriesFromDate(originalEvent *entity.Event, from
 		byMonth, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.ByMonth)
 		bySetPos, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.BySetPos)
 		byYearDay, _ := s.jsonToInt64Slice(originalEvent.RecurrenceRule.ByYearDay)
-		
+
 		createReq.RecurrenceRule = &dto.CreateRecurrenceRuleRequest{
 			Frequency:  originalEvent.RecurrenceRule.Frequency,
 			Interval:   originalEvent.RecurrenceRule.Interval,
@@ -778,7 +778,7 @@ func (s *eventService) createNewSeriesFromDate(originalEvent *entity.Event, from
 			createReq.RecurrenceRule.Until = &until
 		}
 	}
-	
+
 	// Create the new event series
 	_, err := s.CreateEvent(createReq)
 	return err
@@ -795,12 +795,12 @@ func (s *eventService) updateThisAndFutureOccurrences(event *entity.Event, req *
 	if err != nil {
 		return fmt.Errorf("invalid occurrence date format: %w", err)
 	}
-	
+
 	// End the current series at the occurrence date (before it)
 	if err := s.eventRepo.SetRecurrenceUntilDate(event.ID, occurrenceDate.AddDate(0, 0, -1)); err != nil {
 		return fmt.Errorf("failed to end current series: %w", err)
 	}
-	
+
 	// Create a new event for the updated series starting from the occurrence date
 	return s.createNewSeriesFromDate(event, occurrenceDate, req.StartTime, req.EndTime, &req.Event, nil)
 }
@@ -811,9 +811,9 @@ func (s *eventService) skipSingleOccurrence(event *entity.Event, occurrenceDate 
 		ExceptionDate:    occurrenceDate,
 		ModificationType: entity.ModificationTypeSingle,
 		IsSkipped:        true,
-		Notes:           "Occurrence deleted by user",
+		Notes:            "Occurrence deleted by user",
 	}
-	
+
 	return s.eventRepo.CreateRecurrenceException(exception)
 }
 
@@ -826,7 +826,7 @@ func (s *eventService) sliceToJSON(slice interface{}) (string, error) {
 	if slice == nil {
 		return "", nil
 	}
-	
+
 	// Handle empty slices
 	switch v := slice.(type) {
 	case []string:
@@ -838,12 +838,12 @@ func (s *eventService) sliceToJSON(slice interface{}) (string, error) {
 			return "", nil
 		}
 	}
-	
+
 	jsonBytes, err := json.Marshal(slice)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(jsonBytes), nil
 }
 
@@ -852,13 +852,13 @@ func (s *eventService) jsonToStringSlice(jsonStr string) ([]string, error) {
 	if jsonStr == "" {
 		return []string{}, nil
 	}
-	
+
 	var result []string
 	err := json.Unmarshal([]byte(jsonStr), &result)
 	if err != nil {
 		return []string{}, err
 	}
-	
+
 	return result, nil
 }
 
@@ -867,12 +867,12 @@ func (s *eventService) jsonToInt64Slice(jsonStr string) ([]int64, error) {
 	if jsonStr == "" {
 		return []int64{}, nil
 	}
-	
+
 	var result []int64
 	err := json.Unmarshal([]byte(jsonStr), &result)
 	if err != nil {
 		return []int64{}, err
 	}
-	
+
 	return result, nil
 }

@@ -40,7 +40,7 @@ func (c *EventController) CreateEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	event, err := c.eventService.CreateEvent(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -49,7 +49,7 @@ func (c *EventController) CreateEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusCreated, event)
 }
 
@@ -73,7 +73,7 @@ func (c *EventController) GetEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	event, err := c.eventService.GetEvent(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{
@@ -82,7 +82,7 @@ func (c *EventController) GetEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, event)
 }
 
@@ -108,7 +108,7 @@ func (c *EventController) UpdateEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.UpdateEventRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -117,7 +117,7 @@ func (c *EventController) UpdateEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	event, err := c.eventService.UpdateEvent(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -130,7 +130,7 @@ func (c *EventController) UpdateEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, event)
 }
 
@@ -155,7 +155,7 @@ func (c *EventController) DeleteEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = c.eventService.DeleteEvent(id)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -168,7 +168,7 @@ func (c *EventController) DeleteEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.Status(http.StatusNoContent)
 }
 
@@ -198,7 +198,7 @@ func (c *EventController) ListEvents(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Set defaults
 	if req.Page == 0 {
 		req.Page = 1
@@ -206,7 +206,7 @@ func (c *EventController) ListEvents(ctx *gin.Context) {
 	if req.Limit == 0 {
 		req.Limit = 20
 	}
-	
+
 	events, err := c.eventService.ListEvents(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -215,7 +215,7 @@ func (c *EventController) ListEvents(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, events)
 }
 
@@ -241,7 +241,7 @@ func (c *EventController) UpdateRecurringEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.UpdateRecurringEventRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -250,7 +250,7 @@ func (c *EventController) UpdateRecurringEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = c.eventService.UpdateRecurringEvent(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -265,7 +265,7 @@ func (c *EventController) UpdateRecurringEvent(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Recurring event updated successfully",
 	})
@@ -293,7 +293,7 @@ func (c *EventController) DeleteOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.DeleteOccurrenceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -302,7 +302,7 @@ func (c *EventController) DeleteOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = c.eventService.DeleteOccurrence(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -317,7 +317,7 @@ func (c *EventController) DeleteOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Occurrence deleted successfully",
 	})
@@ -347,7 +347,7 @@ func (c *EventController) GetEventOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.GetEventOccurrencesRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -356,7 +356,7 @@ func (c *EventController) GetEventOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	occurrences, err := c.eventService.GetEventOccurrences(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -369,7 +369,7 @@ func (c *EventController) GetEventOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, occurrences)
 }
 
@@ -395,7 +395,7 @@ func (c *EventController) GetOccurrencesInRange(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	occurrences, err := c.eventService.GetOccurrencesInRange(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -404,7 +404,7 @@ func (c *EventController) GetOccurrencesInRange(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, occurrences)
 }
 
@@ -430,7 +430,7 @@ func (c *EventController) UpdateSingleOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.UpdateOccurrenceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -439,7 +439,7 @@ func (c *EventController) UpdateSingleOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = c.eventService.UpdateSingleOccurrence(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -454,7 +454,7 @@ func (c *EventController) UpdateSingleOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Single occurrence updated successfully",
 	})
@@ -482,7 +482,7 @@ func (c *EventController) UpdateFutureOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	var req dto.UpdateFutureOccurrencesRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -491,7 +491,7 @@ func (c *EventController) UpdateFutureOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = c.eventService.UpdateFutureOccurrences(id, &req)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -506,7 +506,7 @@ func (c *EventController) UpdateFutureOccurrences(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Future occurrences updated successfully",
 	})
@@ -531,7 +531,7 @@ func (c *EventController) ValidateRecurrenceRule(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	err := c.eventService.ValidateRecurrenceRule(&req)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -540,7 +540,7 @@ func (c *EventController) ValidateRecurrenceRule(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Recurrence rule is valid",
 		"rule":    req,
@@ -569,7 +569,7 @@ func (c *EventController) GetNextOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	afterStr := ctx.Query("after")
 	if afterStr == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -577,7 +577,7 @@ func (c *EventController) GetNextOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	after, err := time.Parse("2006-01-02", afterStr)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -585,7 +585,7 @@ func (c *EventController) GetNextOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	nextOccurrence, err := c.eventService.GetNextOccurrence(id, after)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -598,7 +598,7 @@ func (c *EventController) GetNextOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	if nextOccurrence == nil {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message":        "No next occurrence found",
@@ -606,7 +606,7 @@ func (c *EventController) GetNextOccurrence(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"nextOccurrence": nextOccurrence.Format("2006-01-02T15:04:05Z07:00"),
 	})

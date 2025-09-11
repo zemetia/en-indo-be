@@ -34,7 +34,7 @@ func NewChurchController(churchService *service.ChurchService) ChurchController 
 
 func (c *churchController) Create(ctx *gin.Context) {
 	log.Printf("[INFO] Church Controller: Received create church request")
-	
+
 	var req dto.ChurchRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Printf("[ERROR] Church Controller: Failed to bind JSON: %v", err)
@@ -66,7 +66,7 @@ func (c *churchController) Create(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	if req.Address == "" {
 		log.Printf("[ERROR] Church Controller: Address is required but empty")
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -75,7 +75,7 @@ func (c *churchController) Create(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Church code is now optional, but if provided, it should not be just whitespace
 	if req.ChurchCode != "" && len(strings.TrimSpace(req.ChurchCode)) == 0 {
 		log.Printf("[ERROR] Church Controller: ChurchCode contains only whitespace")
@@ -85,7 +85,7 @@ func (c *churchController) Create(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	if req.KabupatenID == 0 {
 		log.Printf("[ERROR] Church Controller: KabupatenID is required but zero")
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -116,7 +116,7 @@ func (c *churchController) GetAll(ctx *gin.Context) {
 	// Check if user wants all records without pagination
 	all := ctx.Query("all")
 	perPageStr := ctx.DefaultQuery("per_page", "10")
-	
+
 	if all == "true" || perPageStr == "0" {
 		churches, err := c.churchService.GetAll()
 		if err != nil {
@@ -134,11 +134,11 @@ func (c *churchController) GetAll(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Parse pagination parameters
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(perPageStr)
-	
+
 	churches, err := c.churchService.GetAll()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -152,7 +152,7 @@ func (c *churchController) GetAll(ctx *gin.Context) {
 	total := len(churches)
 	startIdx := (page - 1) * perPage
 	endIdx := startIdx + perPage
-	
+
 	if startIdx >= total {
 		startIdx = 0
 		endIdx = 0
@@ -163,7 +163,7 @@ func (c *churchController) GetAll(ctx *gin.Context) {
 		}
 		churches = churches[startIdx:endIdx]
 	}
-	
+
 	maxPage := (total + perPage - 1) / perPage
 	if maxPage == 0 {
 		maxPage = 1

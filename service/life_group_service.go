@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -25,6 +26,8 @@ type LifeGroupService interface {
 	CheckUserPermission(userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
 	CheckUserPICPermission(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
 	CheckUserCanManageLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
+	CheckUserCanEditLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
+	CheckUserCanDeleteLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
 	CheckUserCanViewLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error)
 	GetByMultipleChurchIDs(churchIDs []uuid.UUID) ([]dto.BatchChurchLifeGroupsResponse, error)
 	GetLifeGroupsByPICRole(ctx context.Context, userID uuid.UUID) ([]dto.LifeGroupResponse, error)
@@ -34,34 +37,39 @@ type lifeGroupService struct {
 	lifeGroupRepo    repository.LifeGroupRepository
 	pelayananRepo    repository.PelayananRepository
 	userRepo         repository.UserRepository
+	personRepo       repository.PersonRepository
 	personMemberRepo repository.LifeGroupPersonMemberRepository
 }
 
-func NewLifeGroupService(lifeGroupRepo repository.LifeGroupRepository, pelayananRepo repository.PelayananRepository, userRepo repository.UserRepository, personMemberRepo repository.LifeGroupPersonMemberRepository) LifeGroupService {
+func NewLifeGroupService(lifeGroupRepo repository.LifeGroupRepository, pelayananRepo repository.PelayananRepository, userRepo repository.UserRepository, personRepo repository.PersonRepository, personMemberRepo repository.LifeGroupPersonMemberRepository) LifeGroupService {
 	return &lifeGroupService{
 		lifeGroupRepo:    lifeGroupRepo,
 		pelayananRepo:    pelayananRepo,
 		userRepo:         userRepo,
+		personRepo:       personRepo,
 		personMemberRepo: personMemberRepo,
 	}
 }
 
 func (s *lifeGroupService) Create(req *dto.LifeGroupRequest) (*dto.LifeGroupResponse, error) {
+	// Parse string UUIDs to uuid.UUID
+	churchID, err := uuid.Parse(req.ChurchID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid church_id format: %v", err)
+	}
+
+	// Create LifeGroup without any leader references
 	lifeGroup := &entity.LifeGroup{
 		ID:           uuid.New(),
 		Name:         req.Name,
 		Location:     req.Location,
 		WhatsAppLink: req.WhatsAppLink,
-		ChurchID:     req.ChurchID,
-		LeaderID:     req.LeaderID,
-		CoLeaderID:   req.CoLeaderID,
+		ChurchID:     churchID,
 	}
 
 	if err := s.lifeGroupRepo.Create(lifeGroup); err != nil {
 		return nil, err
 	}
-
-	// Member management is now handled through separate PersonMember and VisitorMember APIs
 
 	// Get updated life group with all relations
 	updatedLifeGroup, err := s.lifeGroupRepo.GetByID(lifeGroup.ID)
@@ -115,12 +123,16 @@ func (s *lifeGroupService) Update(id uuid.UUID, req *dto.LifeGroupRequest) (*dto
 		return nil, err
 	}
 
+	// Parse string UUIDs to uuid.UUID
+	churchID, err := uuid.Parse(req.ChurchID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid church_id format: %v", err)
+	}
+
 	lifeGroup.Name = req.Name
 	lifeGroup.Location = req.Location
 	lifeGroup.WhatsAppLink = req.WhatsAppLink
-	lifeGroup.ChurchID = req.ChurchID
-	lifeGroup.LeaderID = req.LeaderID
-	lifeGroup.CoLeaderID = req.CoLeaderID
+	lifeGroup.ChurchID = churchID
 
 	if err := s.lifeGroupRepo.Update(lifeGroup); err != nil {
 		return nil, err
@@ -142,16 +154,9 @@ func (s *lifeGroupService) Delete(id uuid.UUID) error {
 }
 
 func (s *lifeGroupService) UpdateLeader(id uuid.UUID, req *dto.UpdateLeaderRequest) (*dto.LifeGroupResponse, error) {
-	if err := s.lifeGroupRepo.UpdateLeader(id, req.LeaderID); err != nil {
-		return nil, err
-	}
-
-	lifeGroup, err := s.lifeGroupRepo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.toResponse(lifeGroup), nil
+	// Leaders are now managed through PersonMember API
+	// This method is deprecated - use PersonMember endpoints instead
+	return nil, fmt.Errorf("leader management has been moved to PersonMember API endpoints")
 }
 
 func (s *lifeGroupService) toResponse(lifeGroup *entity.LifeGroup) *dto.LifeGroupResponse {
@@ -162,17 +167,10 @@ func (s *lifeGroupService) toResponse(lifeGroup *entity.LifeGroup) *dto.LifeGrou
 		WhatsAppLink:   lifeGroup.WhatsAppLink,
 		ChurchID:       lifeGroup.ChurchID,
 		Church:         lifeGroup.Church,
-		LeaderID:       lifeGroup.LeaderID,
-		Leader:         lifeGroup.Leader,
 		PersonMembers:  lifeGroup.PersonMembers,
 		VisitorMembers: lifeGroup.VisitorMembers,
 		CreatedAt:      lifeGroup.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:      lifeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
-	}
-
-	if lifeGroup.CoLeaderID != nil {
-		response.CoLeaderID = lifeGroup.CoLeaderID
-		response.CoLeader = lifeGroup.CoLeader
 	}
 
 	return response
@@ -319,21 +317,24 @@ func (s *lifeGroupService) GetDaftarLifeGroup(ctx context.Context, userID uuid.U
 }
 
 func (s *lifeGroupService) CheckUserPermission(userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error) {
-	// Check if user is leader or co-leader of the lifegroup
-	lifeGroup, err := s.lifeGroupRepo.GetByID(lifeGroupID)
+	ctx := context.Background()
+	
+	// Check if user has a person record and if that person is a leader or co-leader
+	// First get user's person ID
+	person, err := s.personRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		return false, err
+		return false, nil // User doesn't have a person record
 	}
-
-	// Check if user is leader or co-leader
-	if lifeGroup.LeaderID == userID {
-		return true, nil
+	
+	// Check if person is a leader or co-leader in PersonMembers
+	member, err := s.personMemberRepo.GetByLifeGroupAndPersonID(ctx, lifeGroupID, person.ID)
+	if err != nil {
+		return false, nil // Person is not a member of this lifegroup
 	}
-	if lifeGroup.CoLeaderID != nil && *lifeGroup.CoLeaderID == userID {
-		return true, nil
-	}
-
-	return false, nil
+	
+	// Check if member has leadership role
+	return member.Position == entity.PersonMemberPositionLeader || 
+		   member.Position == entity.PersonMemberPositionCoLeader, nil
 }
 
 func (s *lifeGroupService) GetByMultipleChurchIDs(churchIDs []uuid.UUID) ([]dto.BatchChurchLifeGroupsResponse, error) {
@@ -422,6 +423,56 @@ func (s *lifeGroupService) CheckUserCanManageLifeGroup(ctx context.Context, user
 	}
 
 	return isLeaderOrCoLeader, nil
+}
+
+// CheckUserCanEditLifeGroup checks if user can edit this lifegroup
+// Returns true if user is PIC Lifegroup for the church OR leader OR co-leader of this specific lifegroup
+func (s *lifeGroupService) CheckUserCanEditLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error) {
+	// First check if user is PIC Lifegroup for this church
+	isPIC, err := s.CheckUserPICPermission(ctx, userID, lifeGroupID)
+	if err != nil {
+		return false, err
+	}
+	if isPIC {
+		return true, nil
+	}
+
+	// If not PIC, check if user is leader or co-leader of this specific lifegroup
+	isLeaderOrCoLeader, err := s.CheckUserPermission(userID, lifeGroupID)
+	if err != nil {
+		return false, err
+	}
+
+	return isLeaderOrCoLeader, nil
+}
+
+// CheckUserCanDeleteLifeGroup checks if user can delete this lifegroup
+// Returns true if user is PIC Lifegroup for the church OR leader (NOT co-leader) of this specific lifegroup
+func (s *lifeGroupService) CheckUserCanDeleteLifeGroup(ctx context.Context, userID uuid.UUID, lifeGroupID uuid.UUID) (bool, error) {
+	// First check if user is PIC Lifegroup for this church
+	isPIC, err := s.CheckUserPICPermission(ctx, userID, lifeGroupID)
+	if err != nil {
+		return false, err
+	}
+	if isPIC {
+		return true, nil
+	}
+
+	// If not PIC, check if user is leader (NOT co-leader) of this specific lifegroup
+	// First get user's person ID
+	person, err := s.personRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return false, nil // User doesn't have a person record
+	}
+	
+	// Check if person is a leader (NOT co-leader) in PersonMembers
+	member, err := s.personMemberRepo.GetByLifeGroupAndPersonID(ctx, lifeGroupID, person.ID)
+	if err != nil {
+		return false, nil // Person is not a member of this lifegroup
+	}
+	
+	// Only allow leader, not co-leader
+	return member.Position == entity.PersonMemberPositionLeader, nil
 }
 
 // CheckUserCanViewLifeGroup checks if user can view this lifegroup

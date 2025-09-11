@@ -17,7 +17,7 @@ type PelayananController interface {
 	DeletePelayanan(ctx *gin.Context)
 	GetPelayananByID(ctx *gin.Context)
 	GetAllPelayanan(ctx *gin.Context)
-	
+
 	// Assignment operations
 	GetMyPelayanan(ctx *gin.Context)
 	GetAllAssignments(ctx *gin.Context)
@@ -208,7 +208,7 @@ func (c *pelayananController) GetAllAssignments(ctx *gin.Context) {
 
 func (c *pelayananController) GetAllPelayanan(ctx *gin.Context) {
 	departmentID := ctx.Query("department_id")
-	
+
 	pelayanan, err := c.pelayananService.GetAllPelayanan(ctx, departmentID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{

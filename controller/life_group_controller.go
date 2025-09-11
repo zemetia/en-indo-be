@@ -19,7 +19,10 @@ type LifeGroupController interface {
 	UpdateLeader(ctx *gin.Context)
 	GetByChurch(ctx *gin.Context)
 	GetByUser(ctx *gin.Context)
+	GetMyLifeGroup(ctx *gin.Context)
+	GetDaftarLifeGroup(ctx *gin.Context)
 	GetByMultipleChurches(ctx *gin.Context)
+	GetLifeGroupsByPICRole(ctx *gin.Context)
 }
 
 type lifeGroupController struct {
@@ -174,9 +177,6 @@ func (c *lifeGroupController) UpdateLeader(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-
-
-
 func (c *lifeGroupController) GetByChurch(ctx *gin.Context) {
 	churchID, err := uuid.Parse(ctx.Param("church_id"))
 	if err != nil {
@@ -209,8 +209,63 @@ func (c *lifeGroupController) GetByUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+func (c *lifeGroupController) GetMyLifeGroup(ctx *gin.Context) {
+	// Get user ID from authentication middleware
+	userIDInterface, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+		return
+	}
 
+	userIDStr, ok := userIDInterface.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	response, err := c.lifeGroupService.GetMyLifeGroup(ctx, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *lifeGroupController) GetDaftarLifeGroup(ctx *gin.Context) {
+	// Get user ID from authentication middleware
+	userIDInterface, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	userIDStr, ok := userIDInterface.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	response, err := c.lifeGroupService.GetDaftarLifeGroup(ctx, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
 
 func (c *lifeGroupController) GetByMultipleChurches(ctx *gin.Context) {
 	var req dto.BatchChurchLifeGroupsRequest
@@ -225,6 +280,35 @@ func (c *lifeGroupController) GetByMultipleChurches(ctx *gin.Context) {
 	}
 
 	response, err := c.lifeGroupService.GetByMultipleChurchIDs(req.ChurchIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *lifeGroupController) GetLifeGroupsByPICRole(ctx *gin.Context) {
+	// Get user ID from authentication middleware
+	userIDInterface, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	userIDStr, ok := userIDInterface.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	response, err := c.lifeGroupService.GetLifeGroupsByPICRole(ctx, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

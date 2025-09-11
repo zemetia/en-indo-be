@@ -8,7 +8,7 @@ import (
 func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	// Create API v1 group
 	v1 := server.Group("/api/v1")
-	
+
 	// Register routes
 	User(server, injector)
 	Person(server, injector)
@@ -19,7 +19,7 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	Department(server, injector)
 	Pelayanan(server, injector)
 	Visitor(server, injector)
-	
+
 	// Register event routes
 	EventRoutes(v1, injector)
 }

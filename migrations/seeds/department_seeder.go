@@ -50,11 +50,11 @@ func DepartmentSeeder(db *gorm.DB) error {
 	for _, department := range departments {
 		var existingDepartment entity.Department
 		err := db.Where("name = ?", department.Name).First(&existingDepartment).Error
-		
+
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		
+
 		// Only create if department doesn't exist
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// Generate UUID for the new department

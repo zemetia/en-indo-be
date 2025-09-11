@@ -17,6 +17,7 @@ type PersonService interface {
 	GetByChurchID(ctx context.Context, churchID uuid.UUID) ([]dto.PersonResponse, error)
 	GetByKabupatenID(ctx context.Context, kabupatenID uuid.UUID) ([]dto.PersonResponse, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*dto.PersonResponse, error)
+	GetByPICLifegroupChurches(ctx context.Context, personID uuid.UUID) ([]dto.SimplePersonResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *dto.PersonRequest) (*dto.PersonResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -204,6 +205,54 @@ func (s *personService) Update(ctx context.Context, id uuid.UUID, req *dto.Perso
 
 func (s *personService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.personRepository.Delete(ctx, id)
+}
+
+func (s *personService) GetByPICLifegroupChurches(ctx context.Context, personID uuid.UUID) ([]dto.SimplePersonResponse, error) {
+	// First, get the pelayanan assignments of the requesting person to find which churches they are PIC Lifegroup for
+	assignments, err := s.pelayananService.GetMyPelayanan(ctx, personID)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Find churches where the person is PIC Lifegroup 
+	// Check by pelayanan name instead of hardcoded ID
+	var churchIDs []uuid.UUID
+	
+	for _, assignment := range assignments {
+		if assignment.Pelayanan == "PIC Lifegroup" && assignment.IsPic {
+			churchIDs = append(churchIDs, assignment.ChurchID)
+		}
+	}
+	
+	if len(churchIDs) == 0 {
+		return []dto.SimplePersonResponse{}, nil
+	}
+	
+	// Get all persons from those churches
+	var allPersons []dto.SimplePersonResponse
+	for _, churchID := range churchIDs {
+		persons, err := s.personRepository.GetByChurchID(ctx, churchID)
+		if err != nil {
+			continue // Skip this church if error, continue with others
+		}
+		
+		// Convert to SimplePersonResponse
+		for _, person := range persons {
+			allPersons = append(allPersons, dto.SimplePersonResponse{
+				ID:           person.ID,
+				Nama:         person.Nama,
+				Gender:       person.Gender,
+				Alamat:       person.Alamat,
+				Church:       person.Church.Name,
+				TanggalLahir: person.TanggalLahir.Format("2006-01-02"),
+				Email:        person.Email,
+				NomorTelepon: person.NomorTelepon,
+				IsAktif:      person.IsAktif,
+			})
+		}
+	}
+	
+	return allPersons, nil
 }
 
 func (s *personService) toResponse(ctx context.Context, person *entity.Person) *dto.PersonResponse {

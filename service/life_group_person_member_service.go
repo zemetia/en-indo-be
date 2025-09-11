@@ -13,6 +13,7 @@ import (
 
 type LifeGroupPersonMemberService interface {
 	AddPersonMember(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddPersonMemberRequest) (*dto.PersonMemberResponse, error)
+	AddPersonMembersBatch(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddPersonMembersBatchRequest) (*dto.BatchOperationResult, error)
 	GetPersonMembers(ctx context.Context, lifeGroupID uuid.UUID) ([]dto.PersonMemberResponse, error)
 	UpdatePersonMemberPosition(ctx context.Context, lifeGroupID uuid.UUID, req *dto.UpdatePersonMemberPositionRequest) (*dto.PersonMemberResponse, error)
 	RemovePersonMember(ctx context.Context, lifeGroupID uuid.UUID, req *dto.RemovePersonMemberRequest) error
@@ -27,7 +28,6 @@ type lifeGroupPersonMemberService struct {
 	personRepo       repository.PersonRepository
 	lifeGroupRepo    repository.LifeGroupRepository
 }
-
 
 func NewLifeGroupPersonMemberService(
 	personMemberRepo repository.LifeGroupPersonMemberRepository,
@@ -85,6 +85,42 @@ func (s *lifeGroupPersonMemberService) AddPersonMember(ctx context.Context, life
 	}
 
 	return s.toPersonMemberResponse(createdMember), nil
+}
+
+func (s *lifeGroupPersonMemberService) AddPersonMembersBatch(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddPersonMembersBatchRequest) (*dto.BatchOperationResult, error) {
+	// Validate lifegroup exists
+	_, err := s.lifeGroupRepo.GetByID(lifeGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("lifegroup not found: %w", err)
+	}
+
+	result := &dto.BatchOperationResult{
+		TotalRequested: len(req.PersonIDs),
+		Successful:     0,
+		Failed:         0,
+		Errors:         make([]dto.BatchOperationError, 0),
+	}
+
+	// Process each person ID - all default to MEMBER position
+	for _, personID := range req.PersonIDs {
+		individualReq := &dto.AddPersonMemberRequest{
+			PersonID: personID,
+			Position: entity.PersonMemberPositionMember, // Always default to MEMBER
+		}
+
+		_, err := s.AddPersonMember(ctx, lifeGroupID, individualReq)
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, dto.BatchOperationError{
+				ID:    personID,
+				Error: err.Error(),
+			})
+		} else {
+			result.Successful++
+		}
+	}
+
+	return result, nil
 }
 
 func (s *lifeGroupPersonMemberService) GetPersonMembers(ctx context.Context, lifeGroupID uuid.UUID) ([]dto.PersonMemberResponse, error) {
@@ -188,7 +224,7 @@ func (s *lifeGroupPersonMemberService) GetLeadershipStructure(ctx context.Contex
 
 	for _, member := range allMembers {
 		response := s.toPersonMemberResponse(&member)
-		
+
 		switch member.Position {
 		case entity.PersonMemberPositionLeader:
 			structure.Leader = response

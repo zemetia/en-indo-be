@@ -50,7 +50,6 @@ func NewUserService(userRepo repository.UserRepository, personRepo repository.Pe
 	}
 }
 
-
 func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (dto.UserResponse, error) {
 	// Cek apakah email sudah terdaftar
 	existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
@@ -92,7 +91,6 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 		return dto.UserResponse{}, dto.ErrCreateUser
 	}
 
-
 	return dto.UserResponse{
 		ID:                        userReg.ID,
 		Email:                     userReg.Email,
@@ -133,9 +131,6 @@ func (s *userService) Register(ctx context.Context, req dto.UserCreateRequest) (
 		UpdatedAt: userReg.UpdatedAt,
 	}, nil
 }
-
-
-
 
 func (s *userService) GetAllUserWithPagination(ctx context.Context, req dto.PaginationRequest) (dto.UserPaginationResponse, error) {
 	dataWithPaginate, err := s.userRepo.GetAllUserWithPagination(ctx, nil, req)
@@ -372,10 +367,10 @@ func (s *userService) Update(ctx context.Context, req dto.UserUpdateRequest, use
 	}
 
 	return dto.UserUpdateResponse{
-		ID:         user.ID.String(),
-		Email:      user.Email,
-		ImageUrl:   user.ImageUrl,
-		IsActive:   user.IsActive,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		ImageUrl: user.ImageUrl,
+		IsActive: user.IsActive,
 	}, nil
 }
 
@@ -395,7 +390,7 @@ func (s *userService) Delete(ctx context.Context, userId string) error {
 func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto.UserLoginResponse, error) {
 	// Debug logging for login attempts
 	fmt.Printf("[DEBUG] Login attempt for email: %s\n", req.Email)
-	
+
 	check, flag, err := s.userRepo.CheckEmail(ctx, nil, req.Email)
 	if err != nil || !flag {
 		fmt.Printf("[DEBUG] Email not found: %s\n", req.Email)
@@ -416,9 +411,9 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 		fmt.Printf("[DEBUG] Error checking pelayanan for PersonID: %s, error: %v\n", check.PersonID, err)
 		return dto.UserLoginResponse{}, dto.ErrGetPelayanan
 	}
-	
+
 	fmt.Printf("[DEBUG] HasActivePelayanan: %t for PersonID: %s\n", hasActivePelayanan, check.PersonID)
-	
+
 	if !hasActivePelayanan {
 		// Auto-deactivate user if no pelayanan assignments
 		fmt.Printf("[DEBUG] No active pelayanan for PersonID: %s, deactivating user\n", check.PersonID)
@@ -431,7 +426,7 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 		fmt.Printf("[DEBUG] Password check failed for email: %s, err: %v\n", req.Email, err)
 		return dto.UserLoginResponse{}, dto.ErrPasswordNotMatch
 	}
-	
+
 	fmt.Printf("[DEBUG] Password check successful for email: %s\n", req.Email)
 
 	pelayanan, err := s.personRepo.GetPelayananChurchByID(ctx, check.PersonID)
@@ -453,7 +448,7 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 	// Detect first-time login and password setup requirements
 	isFirstTimeLogin := check.LastLoginAt == nil
 	requiresPasswordSetup := !check.HasChangedDefaultPassword
-	
+
 	// Generate password hint if needed
 	var defaultPasswordHint string
 	if requiresPasswordSetup {
@@ -503,12 +498,12 @@ func (s *userService) CreateUserFromPerson(ctx context.Context, person *entity.P
 
 	// Create new user
 	user := &entity.User{
-		ID:         uuid.New(),
-		Email:      person.Email,
-		Password:   password, // Will be hashed by BeforeCreate hook
-		ImageUrl:   "",
-		IsActive:   true,
-		PersonID:   person.ID,
+		ID:       uuid.New(),
+		Email:    person.Email,
+		Password: password, // Will be hashed by BeforeCreate hook
+		ImageUrl: "",
+		IsActive: true,
+		PersonID: person.ID,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -561,7 +556,7 @@ func (s *userService) ToggleUserActivationStatus(ctx context.Context, personID u
 				if personErr != nil {
 					return fmt.Errorf("failed to get person data: %w", personErr)
 				}
-				
+
 				// Create user account from person data
 				_, createErr := s.CreateUserFromPerson(ctx, person)
 				if createErr != nil {

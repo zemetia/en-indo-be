@@ -27,33 +27,33 @@ const (
 	MESSAGE_FAILED_DENIED_ACCESS           = "denied access"
 
 	// Success
-	MESSAGE_SUCCESS_REGISTER_USER           = "success create user"
-	MESSAGE_SUCCESS_GET_LIST_USER           = "success get list user"
-	MESSAGE_SUCCESS_GET_USER                = "success get user"
-	MESSAGE_SUCCESS_LOGIN                   = "success login"
-	MESSAGE_SUCCESS_UPDATE_USER             = "success update user"
-	MESSAGE_SUCCESS_DELETE_USER             = "success delete user"
+	MESSAGE_SUCCESS_REGISTER_USER = "success create user"
+	MESSAGE_SUCCESS_GET_LIST_USER = "success get list user"
+	MESSAGE_SUCCESS_GET_USER      = "success get user"
+	MESSAGE_SUCCESS_LOGIN         = "success login"
+	MESSAGE_SUCCESS_UPDATE_USER   = "success update user"
+	MESSAGE_SUCCESS_DELETE_USER   = "success delete user"
 )
 
 var (
-	ErrCreateUser             = errors.New("failed to create user")
-	ErrGetAllUser             = errors.New("failed to get all user")
-	ErrGetUserById            = errors.New("failed to get user by id")
-	ErrGetByEmail             = errors.New("failed to get user by email")
-	ErrEmailAlreadyExists     = errors.New("email already exist")
-	ErrUpdateUser             = errors.New("failed to update user")
-	ErrUserNotAdmin           = errors.New("user not admin")
-	ErrUserNotFound           = errors.New("user not found")
-	ErrEmailNotFound          = errors.New("email not found")
-	ErrDeleteUser             = errors.New("failed to delete user")
-	ErrPasswordNotMatch       = errors.New("password not match")
-	ErrEmailOrPassword        = errors.New("wrong email or password")
-	ErrTokenInvalid           = errors.New("token invalid")
-	ErrTokenExpired           = errors.New("token expired")
-	ErrUploadProfileImage     = errors.New("failed to upload profile image")
-	ErrGetPelayanan           = errors.New("failed to get pelayanan")
-	ErrUserInactive           = errors.New("user account is inactive")
-	ErrUserNoPelayanan        = errors.New("user has no pelayanan assignments")
+	ErrCreateUser         = errors.New("failed to create user")
+	ErrGetAllUser         = errors.New("failed to get all user")
+	ErrGetUserById        = errors.New("failed to get user by id")
+	ErrGetByEmail         = errors.New("failed to get user by email")
+	ErrEmailAlreadyExists = errors.New("email already exist")
+	ErrUpdateUser         = errors.New("failed to update user")
+	ErrUserNotAdmin       = errors.New("user not admin")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrEmailNotFound      = errors.New("email not found")
+	ErrDeleteUser         = errors.New("failed to delete user")
+	ErrPasswordNotMatch   = errors.New("password not match")
+	ErrEmailOrPassword    = errors.New("wrong email or password")
+	ErrTokenInvalid       = errors.New("token invalid")
+	ErrTokenExpired       = errors.New("token expired")
+	ErrUploadProfileImage = errors.New("failed to upload profile image")
+	ErrGetPelayanan       = errors.New("failed to get pelayanan")
+	ErrUserInactive       = errors.New("user account is inactive")
+	ErrUserNoPelayanan    = errors.New("user has no pelayanan assignments")
 )
 
 type (
@@ -96,14 +96,11 @@ type (
 	}
 
 	UserUpdateResponse struct {
-		ID         string `json:"id"`
-		Email      string `json:"email"`
-		ImageUrl   string `json:"image_url"`
-		IsActive   bool   `json:"is_active"`
+		ID       string `json:"id"`
+		Email    string `json:"email"`
+		ImageUrl string `json:"image_url"`
+		IsActive bool   `json:"is_active"`
 	}
-
-
-
 
 	UserLoginRequest struct {
 		Email    string `json:"email" form:"email" binding:"required"`
@@ -117,22 +114,21 @@ type (
 	// }
 
 	UserLoginResponse struct {
-		Token                   string                       `json:"token"`
-		Pelayanan               []PersonHasPelayananResponse `json:"pelayanan"`
-		Nama                    string                       `json:"nama"`
-		ImageUrl                string                       `json:"image_url"`
-		IsFirstTimeLogin        bool                         `json:"is_first_time_login"`
-		RequiresPasswordSetup   bool                         `json:"requires_password_setup"`
-		DefaultPasswordHint     string                       `json:"default_password_hint,omitempty"`
-		ExpiredAt               time.Time                    `json:"expired_at"`
+		Token                 string                       `json:"token"`
+		Pelayanan             []PersonHasPelayananResponse `json:"pelayanan"`
+		Nama                  string                       `json:"nama"`
+		ImageUrl              string                       `json:"image_url"`
+		IsFirstTimeLogin      bool                         `json:"is_first_time_login"`
+		RequiresPasswordSetup bool                         `json:"requires_password_setup"`
+		DefaultPasswordHint   string                       `json:"default_password_hint,omitempty"`
+		ExpiredAt             time.Time                    `json:"expired_at"`
 	}
 
-
 	UserRequest struct {
-		Email      string    `json:"email" binding:"required,email"`
-		Password   string    `json:"password" binding:"required,min=6"`
-		ImageUrl   string    `json:"image_url"`
-		PersonID   uuid.UUID `json:"person_id" binding:"required"`
+		Email    string    `json:"email" binding:"required,email"`
+		Password string    `json:"password" binding:"required,min=6"`
+		ImageUrl string    `json:"image_url"`
+		PersonID uuid.UUID `json:"person_id" binding:"required"`
 	}
 
 	RegisterRequest struct {
@@ -148,13 +144,12 @@ type (
 	}
 
 	LoginResponse struct {
-		Token      string                       `json:"token"`
-		Pelayanan  []PersonHasPelayananResponse `json:"pelayanan"`
-		Nama       string                       `json:"nama"`
-		ImageUrl   string                       `json:"image_url"`
-		ExpiredAt  time.Time                    `json:"expired_at"`
+		Token     string                       `json:"token"`
+		Pelayanan []PersonHasPelayananResponse `json:"pelayanan"`
+		Nama      string                       `json:"nama"`
+		ImageUrl  string                       `json:"image_url"`
+		ExpiredAt time.Time                    `json:"expired_at"`
 	}
-
 
 	PasswordSetupRequest struct {
 		Action      string `json:"action" binding:"required,oneof=change keep"` // "change" or "keep"

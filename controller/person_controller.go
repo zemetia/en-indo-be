@@ -15,6 +15,7 @@ type PersonController interface {
 	GetAll(ctx *gin.Context)
 	GetByID(ctx *gin.Context)
 	GetByUserID(ctx *gin.Context)
+	GetByPICLifegroupChurches(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
 }
@@ -98,7 +99,7 @@ func (c *personController) GetAll(ctx *gin.Context) {
 		// Check if user wants all records without pagination for search results
 		all := ctx.Query("all")
 		perPageStr := ctx.DefaultQuery("per_page", "10")
-		
+
 		if all == "true" || perPageStr == "0" {
 			ctx.JSON(http.StatusOK, gin.H{
 				"message": "Success search persons",
@@ -111,11 +112,11 @@ func (c *personController) GetAll(ctx *gin.Context) {
 		// Apply pagination to search results
 		page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 		perPage, _ := strconv.Atoi(perPageStr)
-		
+
 		total := len(res)
 		startIdx := (page - 1) * perPage
 		endIdx := startIdx + perPage
-		
+
 		if startIdx >= total {
 			startIdx = 0
 			endIdx = 0
@@ -126,7 +127,7 @@ func (c *personController) GetAll(ctx *gin.Context) {
 			}
 			res = res[startIdx:endIdx]
 		}
-		
+
 		maxPage := (total + perPage - 1) / perPage
 		if maxPage == 0 {
 			maxPage = 1
@@ -158,7 +159,7 @@ func (c *personController) GetAll(ctx *gin.Context) {
 	// Check if user wants all records without pagination
 	all := ctx.Query("all")
 	perPageStr := ctx.DefaultQuery("per_page", "10")
-	
+
 	if all == "true" || perPageStr == "0" {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "Success get all persons",
@@ -171,11 +172,11 @@ func (c *personController) GetAll(ctx *gin.Context) {
 	// Apply pagination
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(perPageStr)
-	
+
 	total := len(res)
 	startIdx := (page - 1) * perPage
 	endIdx := startIdx + perPage
-	
+
 	if startIdx >= total {
 		startIdx = 0
 		endIdx = 0
@@ -186,7 +187,7 @@ func (c *personController) GetAll(ctx *gin.Context) {
 		}
 		res = res[startIdx:endIdx]
 	}
-	
+
 	maxPage := (total + perPage - 1) / perPage
 	if maxPage == 0 {
 		maxPage = 1
@@ -251,6 +252,41 @@ func (c *personController) GetByUserID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Success get person by user",
 		"data":    res,
+	})
+}
+
+func (c *personController) GetByPICLifegroupChurches(ctx *gin.Context) {
+	// Get person ID from JWT claims
+	personIDStr, exists := ctx.Get("person_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Person ID not found in token. User may not have a Person record associated.",
+			"error":   "no_person_id",
+		})
+		return
+	}
+
+	personID, err := uuid.Parse(personIDStr.(string))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid person ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	persons, err := c.personService.GetByPICLifegroupChurches(ctx, personID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get persons from PIC lifegroup churches",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Success get persons from PIC lifegroup churches",
+		"data":    persons,
 	})
 }
 

@@ -52,5 +52,10 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
+	// Drop leader_id and co_leader_id columns from life_groups table
+	if err := DropLifeGroupLeaderColumns(db); err != nil {
+		return err
+	}
+
 	return nil
 }

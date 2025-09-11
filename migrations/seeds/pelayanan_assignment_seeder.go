@@ -38,9 +38,9 @@ func PelayananAssignmentSeeder(db *gorm.DB) error {
 		if isData == 0 {
 			// Also check if the same person-pelayanan-church combination exists
 			var duplicateCheck entity.PersonPelayananGereja
-			duplicateExists := db.Where("person_id = ? AND pelayanan_id = ? AND church_id = ?", 
+			duplicateExists := db.Where("person_id = ? AND pelayanan_id = ? AND church_id = ?",
 				data.PersonID, data.PelayananID, data.ChurchID).First(&duplicateCheck).Error
-			
+
 			if errors.Is(duplicateExists, gorm.ErrRecordNotFound) {
 				// No duplicate found, safe to create
 				if err := db.Create(&data).Error; err != nil {

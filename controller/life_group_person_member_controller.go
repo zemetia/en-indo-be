@@ -11,6 +11,7 @@ import (
 
 type LifeGroupPersonMemberController interface {
 	AddPersonMember(ctx *gin.Context)
+	AddPersonMembersBatch(ctx *gin.Context)
 	GetPersonMembers(ctx *gin.Context)
 	UpdatePersonMemberPosition(ctx *gin.Context)
 	RemovePersonMember(ctx *gin.Context)
@@ -59,6 +60,48 @@ func (c *lifeGroupPersonMemberController) AddPersonMember(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message": "Person member added successfully",
+		"data":    result,
+	})
+}
+
+func (c *lifeGroupPersonMemberController) AddPersonMembersBatch(ctx *gin.Context) {
+	lifeGroupID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid lifegroup ID",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	var req dto.AddPersonMembersBatchRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid request body",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	result, err := c.personMemberService.AddPersonMembersBatch(ctx, lifeGroupID, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to add person members",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Return 207 Multi-Status if there are partial failures, otherwise 201
+	statusCode := http.StatusCreated
+	if result.Failed > 0 && result.Successful > 0 {
+		statusCode = 207 // Multi-Status
+	} else if result.Failed > 0 && result.Successful == 0 {
+		statusCode = http.StatusBadRequest
+	}
+
+	ctx.JSON(statusCode, gin.H{
+		"message": "Batch operation completed",
 		"data":    result,
 	})
 }

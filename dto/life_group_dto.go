@@ -8,12 +8,10 @@ import (
 )
 
 type LifeGroupRequest struct {
-	Name         string      `json:"name" binding:"required"`
-	Location     string      `json:"location" binding:"required"`
-	WhatsAppLink string      `json:"whatsapp_link"`
-	ChurchID     uuid.UUID   `json:"church_id" binding:"required"`
-	LeaderID     uuid.UUID   `json:"leader_id" binding:"required"`
-	CoLeaderID   *uuid.UUID  `json:"co_leader_id"`
+	Name         string `json:"name" binding:"required"`
+	Location     string `json:"location" binding:"required"`
+	WhatsAppLink string `json:"whatsapp_link"`
+	ChurchID     string `json:"church_id" binding:"required"`
 }
 
 type LifeGroupResponse struct {
@@ -23,10 +21,6 @@ type LifeGroupResponse struct {
 	WhatsAppLink   string                          `json:"whatsapp_link"`
 	ChurchID       uuid.UUID                       `json:"church_id"`
 	Church         entity.Church                   `json:"church"`
-	LeaderID       uuid.UUID                       `json:"leader_id"`
-	Leader         entity.User                     `json:"leader"`
-	CoLeaderID     *uuid.UUID                      `json:"co_leader_id,omitempty"`
-	CoLeader       *entity.User                    `json:"co_leader,omitempty"`
 	PersonMembers  []entity.LifeGroupPersonMember  `json:"person_members"`
 	VisitorMembers []entity.LifeGroupVisitorMember `json:"visitor_members"`
 	CreatedAt      string                          `json:"created_at"`
@@ -36,7 +30,6 @@ type LifeGroupResponse struct {
 type UpdateLeaderRequest struct {
 	LeaderID uuid.UUID `json:"leader_id" binding:"required"`
 }
-
 
 type LifeGroupSimpleResponse struct {
 	ID         uuid.UUID `json:"id"`
@@ -63,19 +56,19 @@ type BatchChurchLifeGroupsRequest struct {
 }
 
 type BatchChurchLifeGroupsResponse struct {
-	ChurchID   uuid.UUID            `json:"church_id"`
-	ChurchName string               `json:"church_name"`
-	LifeGroups []LifeGroupResponse  `json:"lifegroups"`
-	Error      *string              `json:"error,omitempty"`
+	ChurchID   uuid.UUID           `json:"church_id"`
+	ChurchName string              `json:"church_name"`
+	LifeGroups []LifeGroupResponse `json:"lifegroups"`
+	Error      *string             `json:"error,omitempty"`
 }
 
 type AddPersonMemberRequest struct {
-	PersonID uuid.UUID                    `json:"person_id" binding:"required"`
+	PersonID uuid.UUID                   `json:"person_id" binding:"required"`
 	Position entity.PersonMemberPosition `json:"position" binding:"required"`
 }
 
 type UpdatePersonMemberPositionRequest struct {
-	PersonID uuid.UUID                    `json:"person_id" binding:"required"`
+	PersonID uuid.UUID                   `json:"person_id" binding:"required"`
 	Position entity.PersonMemberPosition `json:"position" binding:"required"`
 }
 
@@ -84,15 +77,15 @@ type RemovePersonMemberRequest struct {
 }
 
 type PersonMemberResponse struct {
-	ID          uuid.UUID                    `json:"id"`
-	LifeGroupID uuid.UUID                    `json:"life_group_id"`
-	PersonID    uuid.UUID                    `json:"person_id"`
-	Person      entity.Person                `json:"person"`
+	ID          uuid.UUID                   `json:"id"`
+	LifeGroupID uuid.UUID                   `json:"life_group_id"`
+	PersonID    uuid.UUID                   `json:"person_id"`
+	Person      entity.Person               `json:"person"`
 	Position    entity.PersonMemberPosition `json:"position"`
-	IsActive    bool                         `json:"is_active"`
-	JoinedDate  time.Time                    `json:"joined_date"`
-	CreatedAt   time.Time                    `json:"created_at"`
-	UpdatedAt   time.Time                    `json:"updated_at"`
+	IsActive    bool                        `json:"is_active"`
+	JoinedDate  time.Time                   `json:"joined_date"`
+	CreatedAt   time.Time                   `json:"created_at"`
+	UpdatedAt   time.Time                   `json:"updated_at"`
 }
 
 type AddVisitorMemberRequest struct {
@@ -104,18 +97,38 @@ type RemoveVisitorMemberRequest struct {
 }
 
 type VisitorMemberResponse struct {
-	ID          uuid.UUID     `json:"id"`
-	LifeGroupID uuid.UUID     `json:"life_group_id"`
-	VisitorID   uuid.UUID     `json:"visitor_id"`
+	ID          uuid.UUID      `json:"id"`
+	LifeGroupID uuid.UUID      `json:"life_group_id"`
+	VisitorID   uuid.UUID      `json:"visitor_id"`
 	Visitor     entity.Visitor `json:"visitor"`
-	IsActive    bool          `json:"is_active"`
-	JoinedDate  time.Time     `json:"joined_date"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
+	IsActive    bool           `json:"is_active"`
+	JoinedDate  time.Time      `json:"joined_date"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 type LeadershipStructureResponse struct {
-	Leader     *PersonMemberResponse   `json:"leader"`
-	CoLeaders  []PersonMemberResponse  `json:"co_leaders"`
-	Members    []PersonMemberResponse  `json:"members"`
+	Leader    *PersonMemberResponse  `json:"leader"`
+	CoLeaders []PersonMemberResponse `json:"co_leaders"`
+	Members   []PersonMemberResponse `json:"members"`
+}
+
+type AddPersonMembersBatchRequest struct {
+	PersonIDs []uuid.UUID `json:"person_ids" binding:"required,min=1"`
+}
+
+type AddVisitorMembersBatchRequest struct {
+	VisitorIDs []uuid.UUID `json:"visitor_ids" binding:"required,min=1"`
+}
+
+type BatchOperationResult struct {
+	TotalRequested int                    `json:"total_requested"`
+	Successful     int                    `json:"successful"`
+	Failed         int                    `json:"failed"`
+	Errors         []BatchOperationError  `json:"errors,omitempty"`
+}
+
+type BatchOperationError struct {
+	ID    uuid.UUID `json:"id"`
+	Error string    `json:"error"`
 }

@@ -148,9 +148,9 @@ func (rg *RecurrenceGenerator) generateWeeklyOccurrences(start, end time.Time, r
 						originalStart.Hour(), originalStart.Minute(), originalStart.Second(),
 						originalStart.Nanosecond(), originalStart.Location(),
 					)
-					
-					if (occurrence.Equal(start) || occurrence.After(start)) && 
-					   (occurrence.Equal(end) || occurrence.Before(end)) {
+
+					if (occurrence.Equal(start) || occurrence.After(start)) &&
+						(occurrence.Equal(end) || occurrence.Before(end)) {
 						occurrences = append(occurrences, occurrence)
 					}
 					break
@@ -172,7 +172,7 @@ func (rg *RecurrenceGenerator) generateMonthlyOccurrences(start, end time.Time, 
 		interval = 1
 	}
 
-	current := time.Date(originalStart.Year(), originalStart.Month(), 1, 
+	current := time.Date(originalStart.Year(), originalStart.Month(), 1,
 		originalStart.Hour(), originalStart.Minute(), originalStart.Second(),
 		originalStart.Nanosecond(), originalStart.Location())
 
@@ -224,7 +224,7 @@ func (rg *RecurrenceGenerator) generateMonthOccurrences(monthStart time.Time, ru
 	weekdays := rg.jsonToStringSlice(rule.ByWeekday)
 	if len(weekdays) > 0 {
 		weekdayOccurrences := rg.getWeekdayOccurrencesInMonth(monthStart, weekdays, originalStart)
-		
+
 		bySetPos := rg.jsonToInt64Slice(rule.BySetPos)
 		if len(bySetPos) > 0 {
 			// Apply BySetPos filtering
@@ -523,12 +523,12 @@ func (rg *RecurrenceGenerator) jsonToStringSlice(jsonStr string) []string {
 	if jsonStr == "" {
 		return []string{}
 	}
-	
+
 	var result []string
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
 		return []string{}
 	}
-	
+
 	return result
 }
 
@@ -536,11 +536,11 @@ func (rg *RecurrenceGenerator) jsonToInt64Slice(jsonStr string) []int64 {
 	if jsonStr == "" {
 		return []int64{}
 	}
-	
+
 	var result []int64
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
 		return []int64{}
 	}
-	
+
 	return result
 }

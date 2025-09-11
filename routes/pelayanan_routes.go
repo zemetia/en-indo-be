@@ -33,7 +33,7 @@ func Pelayanan(route *gin.Engine, injector *do.Injector) {
 			adminRoutes.POST("/assign", pelayananController.AssignPelayanan)
 			adminRoutes.DELETE("/assignments/:id", pelayananController.UnassignPelayanan)
 			adminRoutes.GET("/assignments/:id", pelayananController.GetAssignmentByID)
-			
+
 			// Pelayanan entity CRUD - parameterized routes last
 			adminRoutes.POST("", pelayananController.CreatePelayanan)
 			adminRoutes.GET("/:id", pelayananController.GetPelayananByID)

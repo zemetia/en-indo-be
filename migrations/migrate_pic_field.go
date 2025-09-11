@@ -38,7 +38,7 @@ func createPicPelayananForDepartments(db *gorm.DB) error {
 		// Check if PIC pelayanan already exists for this department
 		var existingPic entity.Pelayanan
 		err := db.Where("department_id = ? AND is_pic = ?", dept.ID, true).First(&existingPic).Error
-		
+
 		if err == gorm.ErrRecordNotFound {
 			// Create new PIC pelayanan
 			picPelayanan := entity.Pelayanan{
@@ -48,7 +48,7 @@ func createPicPelayananForDepartments(db *gorm.DB) error {
 				DepartmentID: dept.ID,
 				IsPic:        true,
 			}
-			
+
 			if err := db.Create(&picPelayanan).Error; err != nil {
 				return fmt.Errorf("failed to create PIC pelayanan for department %s: %v", dept.Name, err)
 			}
@@ -83,7 +83,7 @@ func migratePicAssignments(db *gorm.DB) error {
 
 		// Check if assignment to PIC pelayanan already exists
 		var existingAssignment entity.PersonPelayananGereja
-		err := db.Where("person_id = ? AND pelayanan_id = ? AND church_id = ?", 
+		err := db.Where("person_id = ? AND pelayanan_id = ? AND church_id = ?",
 			assignment.PersonID, picPelayanan.ID, assignment.ChurchID).First(&existingAssignment).Error
 
 		if err == gorm.ErrRecordNotFound {
@@ -94,7 +94,7 @@ func migratePicAssignments(db *gorm.DB) error {
 				PelayananID: picPelayanan.ID,
 				ChurchID:    assignment.ChurchID,
 			}
-			
+
 			if err := db.Create(&newAssignment).Error; err != nil {
 				return fmt.Errorf("failed to create PIC assignment: %v", err)
 			}

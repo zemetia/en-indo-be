@@ -37,13 +37,13 @@ func (r *lifeGroupRepository) Create(lifeGroup *entity.LifeGroup) error {
 
 func (r *lifeGroupRepository) GetAll() ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").Find(&lifeGroups).Error
+	err := r.db.Preload("Church").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").Find(&lifeGroups).Error
 	return lifeGroups, err
 }
 
 func (r *lifeGroupRepository) Search(ctx context.Context, search *dto.PersonSearchDto) ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	query := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor")
+	query := r.db.Preload("Church").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor")
 
 	if search.Name != nil {
 		query = query.Where("nama LIKE ?", "%"+*search.Name+"%")
@@ -67,7 +67,7 @@ func (r *lifeGroupRepository) Search(ctx context.Context, search *dto.PersonSear
 
 func (r *lifeGroupRepository) GetByID(id uuid.UUID) (*entity.LifeGroup, error) {
 	var lifeGroup entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").First(&lifeGroup, "id = ?", id).Error
+	err := r.db.Preload("Church").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").First(&lifeGroup, "id = ?", id).Error
 	return &lifeGroup, err
 }
 
@@ -80,24 +80,27 @@ func (r *lifeGroupRepository) Delete(id uuid.UUID) error {
 }
 
 func (r *lifeGroupRepository) UpdateLeader(id uuid.UUID, leaderID uuid.UUID) error {
-	return r.db.Model(&entity.LifeGroup{}).Where("id = ?", id).Update("leader_id", leaderID).Error
+	// Leader management is now handled through PersonMember API
+	// This method is deprecated
+	return nil
 }
-
 
 func (r *lifeGroupRepository) GetByChurchID(churchID uuid.UUID) ([]entity.LifeGroup, error) {
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
+	err := r.db.Preload("Church").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
 		Where("church_id = ?", churchID).
 		Find(&lifeGroups).Error
 	return lifeGroups, err
 }
 
-
 func (r *lifeGroupRepository) GetByUserID(userID uuid.UUID) ([]entity.LifeGroup, error) {
+	// This method now searches through PersonMembers table instead of leader columns
 	var lifeGroups []entity.LifeGroup
-	err := r.db.Preload("Church").Preload("Leader").Preload("Leader.Person").Preload("CoLeader").Preload("CoLeader.Person").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
-		Where("leader_id = ? OR co_leader_id = ?", userID, userID).
+	err := r.db.Preload("Church").Preload("PersonMembers").Preload("PersonMembers.Person").Preload("VisitorMembers").Preload("VisitorMembers.Visitor").
+		Joins("JOIN life_group_person_members lgpm ON lgpm.life_group_id = life_groups.id").
+		Joins("JOIN persons p ON p.id = lgpm.person_id").
+		Joins("JOIN users u ON u.person_id = p.id").
+		Where("u.id = ? AND lgpm.is_active = true", userID).
 		Find(&lifeGroups).Error
 	return lifeGroups, err
 }
-

@@ -26,7 +26,7 @@ func NewChurchService(churchRepository repository.ChurchRepository, kabupatenRep
 
 func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, error) {
 	log.Printf("[INFO] Church service: Creating church with data: %+v", req)
-	
+
 	// Check if church code already exists (unless it's empty)
 	if req.ChurchCode != "" {
 		// Check for existing church with same code
@@ -35,7 +35,7 @@ func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, err
 			log.Printf("[ERROR] Church service: Failed to check existing churches: %v", err)
 			return nil, err
 		}
-		
+
 		for _, existing := range existingChurches {
 			if existing.ChurchCode == req.ChurchCode {
 				log.Printf("[ERROR] Church service: Church code '%s' already exists", req.ChurchCode)
@@ -43,7 +43,7 @@ func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, err
 			}
 		}
 	}
-	
+
 	church := &entity.Church{
 		ID:          uuid.New(),
 		Name:        req.Name,
@@ -66,13 +66,13 @@ func (s *ChurchService) Create(req *dto.ChurchRequest) (*dto.ChurchResponse, err
 
 	log.Printf("[INFO] Church service: Successfully created church with ID: %s", church.ID)
 	log.Printf("[INFO] Church service: Fetching created church details")
-	
+
 	result, err := s.GetByID(church.ID)
 	if err != nil {
 		log.Printf("[ERROR] Church service: Failed to fetch created church: %v", err)
 		return nil, err
 	}
-	
+
 	return result, nil
 }
 
@@ -84,7 +84,7 @@ func (s *ChurchService) GetAll() ([]dto.ChurchResponse, error) {
 	}
 
 	log.Printf("[INFO] Church service: Retrieved %d churches from database", len(churches))
-	
+
 	var responses []dto.ChurchResponse
 	for _, church := range churches {
 		if response := s.toResponse(&church); response != nil {
@@ -168,7 +168,7 @@ func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
 	var kabupatenName string
 	var provinsiName string
 	var provinsiID uint
-	
+
 	// First try to get data from preloaded relationships
 	if church.Kabupaten.ID > 0 {
 		kabupatenName = church.Kabupaten.Name
@@ -186,7 +186,7 @@ func (s *ChurchService) toResponse(church *entity.Church) *dto.ChurchResponse {
 			log.Printf("[ERROR] Church service: Failed to get kabupaten ID %d for church %s: %v", church.KabupatenID, church.Name, err)
 		} else if kabupaten != nil {
 			kabupatenName = kabupaten.Name
-			
+
 			// Get provinsi name
 			if kabupaten.ProvinsiID > 0 {
 				provinsiID = kabupaten.ProvinsiID

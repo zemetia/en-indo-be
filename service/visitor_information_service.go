@@ -130,7 +130,12 @@ func (s *visitorInformationService) entityToResponse(visitorInfo *entity.Visitor
 			IGUsername:  visitorInfo.Visitor.IGUsername,
 			PhoneNumber: visitorInfo.Visitor.PhoneNumber,
 			KabupatenID: visitorInfo.Visitor.KabupatenID,
-			Kabupaten:   func() string { if visitorInfo.Visitor.KabupatenID != nil { return visitorInfo.Visitor.Kabupaten.Name }; return "" }(),
+			Kabupaten: func() string {
+				if visitorInfo.Visitor.KabupatenID != nil {
+					return visitorInfo.Visitor.Kabupaten.Name
+				}
+				return ""
+			}(),
 		}
 	}
 

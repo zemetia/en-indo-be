@@ -135,8 +135,6 @@ func (c *userController) GetByEmail(ctx *gin.Context) {
 	})
 }
 
-
-
 func (c *userController) Update(ctx *gin.Context) {
 	userId := ctx.Param("id")
 	if userId == "" {
@@ -312,13 +310,13 @@ func (c *userController) SetupPassword(ctx *gin.Context) {
 
 func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 	personID := ctx.Param("person_id")
-	
+
 	// Debug logging
 	fmt.Printf("[DEBUG] ToggleActivationStatus - PersonID: %s\n", personID)
 	fmt.Printf("[DEBUG] Request Method: %s\n", ctx.Request.Method)
 	fmt.Printf("[DEBUG] Content-Type: %s\n", ctx.GetHeader("Content-Type"))
 	fmt.Printf("[DEBUG] Authorization: %s\n", ctx.GetHeader("Authorization"))
-	
+
 	if personID == "" {
 		fmt.Printf("[ERROR] Person ID is empty\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -341,7 +339,7 @@ func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 	// Read raw body for debugging
 	body, _ := ctx.GetRawData()
 	fmt.Printf("[DEBUG] Raw request body: %s\n", string(body))
-	
+
 	// Reset body reader for ShouldBindJSON
 	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
@@ -358,7 +356,7 @@ func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	fmt.Printf("[DEBUG] Parsed request - IsActive: %v\n", req.IsActive)
 
 	// Get current user's person ID from JWT token to prevent self-deactivation

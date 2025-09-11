@@ -12,6 +12,6 @@ func RemoveVisitorInformationDeletedAt(db *gorm.DB) error {
 			return err
 		}
 	}
-	
+
 	return nil
 }

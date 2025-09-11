@@ -18,7 +18,7 @@ type PelayananRepository interface {
 	GetAllPelayanan(ctx context.Context) ([]entity.Pelayanan, error)
 	GetAllPelayananByDepartment(ctx context.Context, departmentID uuid.UUID) ([]entity.Pelayanan, error)
 	GetPelayananByDepartmentAndPic(ctx context.Context, departmentID uuid.UUID, isPic bool) (*entity.Pelayanan, error)
-	
+
 	// Assignment operations
 	GetPelayananByPersonID(ctx context.Context, personID uuid.UUID) ([]entity.PersonPelayananGereja, error)
 	GetAllPelayananAssignments(ctx context.Context, req dto.PaginationRequest) ([]entity.PersonPelayananGereja, *dto.PaginationResponse, error)

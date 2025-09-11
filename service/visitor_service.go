@@ -111,11 +111,26 @@ func (s *visitorService) entityToResponse(visitor *entity.Visitor) *dto.VisitorR
 		IGUsername:  visitor.IGUsername,
 		PhoneNumber: visitor.PhoneNumber,
 		KabupatenID: visitor.KabupatenID,
-		Kabupaten:   func() string { if visitor.KabupatenID != nil { return visitor.Kabupaten.Name }; return "" }(),
-		ProvinsiID:  func() *uint { if visitor.KabupatenID != nil { return &visitor.Kabupaten.ProvinsiID }; return nil }(),
-		Provinsi:    func() string { if visitor.KabupatenID != nil { return visitor.Kabupaten.Provinsi.Name }; return "" }(),
-		CreatedAt:   visitor.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:   visitor.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Kabupaten: func() string {
+			if visitor.KabupatenID != nil {
+				return visitor.Kabupaten.Name
+			}
+			return ""
+		}(),
+		ProvinsiID: func() *uint {
+			if visitor.KabupatenID != nil {
+				return &visitor.Kabupaten.ProvinsiID
+			}
+			return nil
+		}(),
+		Provinsi: func() string {
+			if visitor.KabupatenID != nil {
+				return visitor.Kabupaten.Provinsi.Name
+			}
+			return ""
+		}(),
+		CreatedAt: visitor.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt: visitor.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	var information []dto.VisitorInformationResponse

@@ -18,7 +18,7 @@ type PelayananService interface {
 	DeletePelayanan(ctx context.Context, id uuid.UUID) error
 	GetPelayananByID(ctx context.Context, id uuid.UUID) (dto.PelayananResponse, error)
 	GetAllPelayanan(ctx context.Context, departmentID string) ([]dto.PelayananResponse, error)
-	
+
 	// Assignment operations
 	GetMyPelayanan(ctx context.Context, personID uuid.UUID) ([]dto.PersonHasPelayananResponse, error)
 	GetAllAssignments(ctx context.Context, req dto.PaginationRequest) (dto.PelayananAssignmentPaginationResponse, error)
@@ -28,11 +28,11 @@ type PelayananService interface {
 }
 
 type pelayananService struct {
-	pelayananRepo   repository.PelayananRepository
-	personRepo      repository.PersonRepository
-	churchRepo      repository.ChurchRepository
-	departmentRepo  repository.DepartmentRepository
-	userService     UserService
+	pelayananRepo  repository.PelayananRepository
+	personRepo     repository.PersonRepository
+	churchRepo     repository.ChurchRepository
+	departmentRepo repository.DepartmentRepository
+	userService    UserService
 }
 
 func NewPelayananService(
@@ -233,7 +233,7 @@ func (s *pelayananService) GetAllAssignments(ctx context.Context, req dto.Pagina
 			hasUserAccount = true
 			isUserActive = user.IsActive
 		}
-		
+
 		responses = append(responses, dto.PelayananAssignmentResponse{
 			ID:             assignment.ID,
 			PersonID:       assignment.PersonID,
@@ -261,21 +261,21 @@ func (s *pelayananService) GetAllAssignments(ctx context.Context, req dto.Pagina
 func (s *pelayananService) GetAllPelayanan(ctx context.Context, departmentID string) ([]dto.PelayananResponse, error) {
 	var pelayanan []entity.Pelayanan
 	var err error
-	
+
 	if departmentID != "" {
 		// Parse department ID
 		deptID, parseErr := uuid.Parse(departmentID)
 		if parseErr != nil {
 			return nil, fmt.Errorf("invalid department ID format: %w", parseErr)
 		}
-		
+
 		// Get pelayanan filtered by department
 		pelayanan, err = s.pelayananRepo.GetAllPelayananByDepartment(ctx, deptID)
 	} else {
 		// Get all pelayanan
 		pelayanan, err = s.pelayananRepo.GetAllPelayanan(ctx)
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all pelayanan: %w", err)
 	}
@@ -411,7 +411,7 @@ func (s *pelayananService) GetAssignmentByID(ctx context.Context, assignmentID u
 		hasUserAccount = true
 		isUserActive = user.IsActive
 	}
-	
+
 	return dto.PelayananAssignmentResponse{
 		ID:             assignment.ID,
 		PersonID:       assignment.PersonID,

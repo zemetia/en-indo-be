@@ -10,9 +10,9 @@ import (
 type PersonMemberPosition string
 
 const (
-	PersonMemberPositionLeader    PersonMemberPosition = "LEADER"
-	PersonMemberPositionCoLeader  PersonMemberPosition = "CO_LEADER"
-	PersonMemberPositionMember    PersonMemberPosition = "MEMBER"
+	PersonMemberPositionLeader   PersonMemberPosition = "LEADER"
+	PersonMemberPositionCoLeader PersonMemberPosition = "CO_LEADER"
+	PersonMemberPositionMember   PersonMemberPosition = "MEMBER"
 )
 
 type LifeGroupPersonMember struct {

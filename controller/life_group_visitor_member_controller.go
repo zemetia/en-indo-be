@@ -11,6 +11,7 @@ import (
 
 type LifeGroupVisitorMemberController interface {
 	AddVisitorMember(ctx *gin.Context)
+	AddVisitorMembersBatch(ctx *gin.Context)
 	GetVisitorMembers(ctx *gin.Context)
 	RemoveVisitorMember(ctx *gin.Context)
 	GetVisitorMemberByID(ctx *gin.Context)
@@ -57,6 +58,48 @@ func (c *lifeGroupVisitorMemberController) AddVisitorMember(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message": "Visitor member added successfully",
+		"data":    result,
+	})
+}
+
+func (c *lifeGroupVisitorMemberController) AddVisitorMembersBatch(ctx *gin.Context) {
+	lifeGroupID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid lifegroup ID",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	var req dto.AddVisitorMembersBatchRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid request body",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	result, err := c.visitorMemberService.AddVisitorMembersBatch(ctx, lifeGroupID, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to add visitor members",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Return 207 Multi-Status if there are partial failures, otherwise 201
+	statusCode := http.StatusCreated
+	if result.Failed > 0 && result.Successful > 0 {
+		statusCode = 207 // Multi-Status
+	} else if result.Failed > 0 && result.Successful == 0 {
+		statusCode = http.StatusBadRequest
+	}
+
+	ctx.JSON(statusCode, gin.H{
+		"message": "Batch operation completed",
 		"data":    result,
 	})
 }

@@ -10,11 +10,12 @@ const (
 	ENUM_PAGINATION_PER_PAGE = 10
 	ENUM_PAGINATION_PAGE     = 1
 
-	DB              = "db"
-	JWTService      = "JWTService"
-	DocumentService = "DocumentService"
-	UserService     = "UserService"
+	DB               = "db"
+	JWTService       = "JWTService"
+	DocumentService  = "DocumentService"
+	UserService      = "UserService"
 	PelayananService = "PelayananService"
+	LifeGroupService = "LifeGroupService"
 
 	BASE_URL    = "http://localhost:8080"
 	UPLOAD_PATH = "./uploads"

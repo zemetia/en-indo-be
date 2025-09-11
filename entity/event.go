@@ -33,17 +33,17 @@ type Event struct {
 }
 
 type RecurrenceRule struct {
-	ID         uuid.UUID      `gorm:"type:char(36);primary_key"`
-	Frequency  string         `gorm:"type:varchar(16);not null"` // DAILY, WEEKLY, MONTHLY, YEARLY
-	Interval   int            `gorm:"default:1;not null"`        // multiples of frequency
-	ByWeekday  string `gorm:"type:text"`                         // JSON string: ["MO","TU"], only for WEEKLY
-	ByMonthDay string `gorm:"type:text"`                         // JSON string: [1,15], only for MONTHLY
-	ByMonth    string `gorm:"type:text"`                         // JSON string: [1,6,12], only for YEARLY
-	BySetPos   string `gorm:"type:text"`                         // JSON string: [1,-1] for first/last occurrence
-	WeekStart  string `gorm:"type:varchar(2);default:'MO'"`      // week start day (MO, SU, etc.)
-	ByYearDay  string `gorm:"type:text"`                         // JSON string: day of year (1-366)
-	Count      *int           `gorm:""`                          // optional: limit total occurrences
-	Until      *time.Time     `gorm:""`                          // optional: end date for occurrences
+	ID         uuid.UUID  `gorm:"type:char(36);primary_key"`
+	Frequency  string     `gorm:"type:varchar(16);not null"`    // DAILY, WEEKLY, MONTHLY, YEARLY
+	Interval   int        `gorm:"default:1;not null"`           // multiples of frequency
+	ByWeekday  string     `gorm:"type:text"`                    // JSON string: ["MO","TU"], only for WEEKLY
+	ByMonthDay string     `gorm:"type:text"`                    // JSON string: [1,15], only for MONTHLY
+	ByMonth    string     `gorm:"type:text"`                    // JSON string: [1,6,12], only for YEARLY
+	BySetPos   string     `gorm:"type:text"`                    // JSON string: [1,-1] for first/last occurrence
+	WeekStart  string     `gorm:"type:varchar(2);default:'MO'"` // week start day (MO, SU, etc.)
+	ByYearDay  string     `gorm:"type:text"`                    // JSON string: day of year (1-366)
+	Count      *int       `gorm:""`                             // optional: limit total occurrences
+	Until      *time.Time `gorm:""`                             // optional: end date for occurrences
 
 	Timestamp
 }
@@ -52,15 +52,15 @@ type RecurrenceException struct {
 	ID                uuid.UUID  `gorm:"type:char(36);primary_key"`
 	EventID           uuid.UUID  `gorm:"type:char(36);index;not null"`
 	Event             Event      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:EventID"`
-	ExceptionDate     time.Time  `gorm:"type:date;not null"`       // date of the instance to skip or override
+	ExceptionDate     time.Time  `gorm:"type:date;not null"`                // date of the instance to skip or override
 	ModificationType  string     `gorm:"type:varchar(10);default:'single'"` // single, future, all
-	IsSkipped         bool       `gorm:"default:false"`            // true if this occurrence is removed
-	OverrideStart     *time.Time `gorm:""`                         // optional: new start time for this instance
-	OverrideEnd       *time.Time `gorm:""`                         // optional: new end time for this instance
-	OriginalStartTime *time.Time `gorm:""`                         // original start time before modification
-	OriginalEndTime   *time.Time `gorm:""`                         // original end time before modification
-	SplitFromDate     *time.Time `gorm:"type:date"`                // when "future" edits split the series
-	Notes             string     `gorm:"type:text"`                // optional remarks
+	IsSkipped         bool       `gorm:"default:false"`                     // true if this occurrence is removed
+	OverrideStart     *time.Time `gorm:""`                                  // optional: new start time for this instance
+	OverrideEnd       *time.Time `gorm:""`                                  // optional: new end time for this instance
+	OriginalStartTime *time.Time `gorm:""`                                  // original start time before modification
+	OriginalEndTime   *time.Time `gorm:""`                                  // original end time before modification
+	SplitFromDate     *time.Time `gorm:"type:date"`                         // when "future" edits split the series
+	Notes             string     `gorm:"type:text"`                         // optional remarks
 
 	Timestamp
 }

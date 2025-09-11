@@ -13,6 +13,7 @@ import (
 
 type LifeGroupVisitorMemberService interface {
 	AddVisitorMember(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddVisitorMemberRequest) (*dto.VisitorMemberResponse, error)
+	AddVisitorMembersBatch(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddVisitorMembersBatchRequest) (*dto.BatchOperationResult, error)
 	GetVisitorMembers(ctx context.Context, lifeGroupID uuid.UUID) ([]dto.VisitorMemberResponse, error)
 	RemoveVisitorMember(ctx context.Context, lifeGroupID uuid.UUID, req *dto.RemoveVisitorMemberRequest) error
 	GetVisitorMemberByID(ctx context.Context, memberID uuid.UUID) (*dto.VisitorMemberResponse, error)
@@ -78,6 +79,41 @@ func (s *lifeGroupVisitorMemberService) AddVisitorMember(ctx context.Context, li
 	}
 
 	return s.toVisitorMemberResponse(createdMember), nil
+}
+
+func (s *lifeGroupVisitorMemberService) AddVisitorMembersBatch(ctx context.Context, lifeGroupID uuid.UUID, req *dto.AddVisitorMembersBatchRequest) (*dto.BatchOperationResult, error) {
+	// Validate lifegroup exists
+	_, err := s.lifeGroupRepo.GetByID(lifeGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("lifegroup not found: %w", err)
+	}
+
+	result := &dto.BatchOperationResult{
+		TotalRequested: len(req.VisitorIDs),
+		Successful:     0,
+		Failed:         0,
+		Errors:         make([]dto.BatchOperationError, 0),
+	}
+
+	// Process each visitor request
+	for _, visitorID := range req.VisitorIDs {
+		individualReq := &dto.AddVisitorMemberRequest{
+			VisitorID: visitorID,
+		}
+
+		_, err := s.AddVisitorMember(ctx, lifeGroupID, individualReq)
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, dto.BatchOperationError{
+				ID:    visitorID,
+				Error: err.Error(),
+			})
+		} else {
+			result.Successful++
+		}
+	}
+
+	return result, nil
 }
 
 func (s *lifeGroupVisitorMemberService) GetVisitorMembers(ctx context.Context, lifeGroupID uuid.UUID) ([]dto.VisitorMemberResponse, error) {

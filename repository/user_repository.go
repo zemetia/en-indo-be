@@ -74,7 +74,6 @@ func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&entity.User{}, "id = ?", id).Error
 }
 
-
 func (r *userRepository) UpdateActivationStatus(ctx context.Context, id uuid.UUID, isActive bool) error {
 	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", id).Update("is_active", isActive).Error
 }

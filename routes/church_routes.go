@@ -19,11 +19,11 @@ func Church(route *gin.Engine, injector *do.Injector) {
 		// Semua route church memerlukan autentikasi
 		routes.POST("", middleware.Authenticate(jwtService, userService), churchController.Create)
 		routes.GET("", churchController.GetAll)
-		
+
 		// Specific routes must come before parameterized routes
 		routes.GET("/by-kabupaten/:id", churchController.GetByKabupatenID)
 		routes.GET("/by-provinsi/:id", churchController.GetByProvinsiID)
-		
+
 		// Parameterized routes come last
 		routes.GET("/:id", churchController.GetByID)
 		routes.PUT("/:id", middleware.Authenticate(jwtService, userService), churchController.Update)
