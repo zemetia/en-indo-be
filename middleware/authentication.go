@@ -1,0 +1,65 @@
+package middleware
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/zemetia/en-indo-be/dto"
+	"github.com/zemetia/en-indo-be/service"
+	"github.com/zemetia/en-indo-be/utils"
+)
+
+func Authenticate(jwtService service.JWTService, userService service.UserService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader == "" {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, dto.MESSAGE_FAILED_TOKEN_NOT_FOUND, nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		if !strings.Contains(authHeader, "Bearer ") {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, dto.MESSAGE_FAILED_TOKEN_NOT_VALID, nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		authHeader = strings.Replace(authHeader, "Bearer ", "", -1)
+		token, err := jwtService.ValidateToken(authHeader)
+		if err != nil {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, dto.MESSAGE_FAILED_TOKEN_NOT_VALID, nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		if !token.Valid {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, dto.MESSAGE_FAILED_DENIED_ACCESS, nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		userId, err := jwtService.GetUserIDByToken(authHeader)
+		if err != nil {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, err.Error(), nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		// Get user data to extract PersonID
+		user, err := userService.GetUserById(ctx, userId)
+		if err != nil {
+			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, "user not found", nil)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		ctx.Set("token", authHeader)
+		ctx.Set("user_id", userId)
+		
+		// Only set person_id if it's not an empty UUID
+		emptyUUID := "00000000-0000-0000-0000-000000000000"
+		personIDStr := user.PersonID.String()
+		if personIDStr != emptyUUID {
+			ctx.Set("person_id", personIDStr)
+		}
+		
+		ctx.Next()
+	}
+}

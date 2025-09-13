@@ -1,0 +1,82 @@
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Every Nation Jakarta",
+    "address": "Jl. M.H. Thamrin No.11, RT.8/RW.4, Gondangdia, Kec. Menteng, Kota Jakarta Pusat",
+    "phone": "(021) 31902728",
+    "email": "jakarta@everynation.id",
+    "kabupaten_id": 3173
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174001",
+    "name": "Every Nation Bandung",
+    "address": "Jl. Ciumbuleuit No.37, Hegarmanah, Kec. Cidadap, Kota Bandung",
+    "phone": "(022) 2032728",
+    "email": "bandung@everynation.id",
+    "kabupaten_id": 3273
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174002",
+    "name": "Every Nation Surabaya",
+    "address": "Jl. Raya Darmo Permai III, Pradahkalikendal, Kec. Dukuhpakis, Kota Surabaya",
+    "phone": "(031) 7345982",
+    "email": "surabaya@everynation.id",
+    "kabupaten_id": 3578
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174003",
+    "name": "Every Nation Yogyakarta",
+    "address": "Jl. Seturan Raya, Kledokan, Caturtunggal, Kec. Depok, Kabupaten Sleman",
+    "phone": "(0274) 4332560",
+    "email": "yogyakarta@everynation.id",
+    "kabupaten_id": 3471
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174004",
+    "name": "Every Nation Bali",
+    "address": "Jl. By Pass Ngurah Rai, Kuta, Badung, Bali",
+    "phone": "(0361) 4752890",
+    "email": "bali@everynation.id",
+    "kabupaten_id": 5171
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174005",
+    "name": "Every Nation Medan",
+    "address": "Jl. Gaharu No.15, Medan Estate, Kec. Percut Sei Tuan, Kabupaten Deli Serdang",
+    "phone": "(061) 7366789",
+    "email": "medan@everynation.id",
+    "kabupaten_id": 1275
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174006",
+    "name": "Every Nation Makassar",
+    "address": "Jl. Boulevard Raya No.21, Panakkukang, Kota Makassar",
+    "phone": "(0411) 8123456",
+    "email": "makassar@everynation.id",
+    "kabupaten_id": 7371
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174007",
+    "name": "Every Nation Palembang",
+    "address": "Jl. Kolonel H. Burlian No.88, Sematang Borang, Kota Palembang",
+    "phone": "(0711) 5432109",
+    "email": "palembang@everynation.id",
+    "kabupaten_id": 1671
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174008",
+    "name": "Every Nation Semarang",
+    "address": "Jl. Pemuda No.142, Sekayu, Kec. Semarang Tengah, Kota Semarang",
+    "phone": "(024) 3567890",
+    "email": "semarang@everynation.id",
+    "kabupaten_id": 3374
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174009",
+    "name": "Every Nation Balikpapan",
+    "address": "Jl. Ahmad Yani No.67, Klandasan Ilir, Kota Balikpapan",
+    "phone": "(0542) 7890123",
+    "email": "balikpapan@everynation.id",
+    "kabupaten_id": 6471
+  }
+] 

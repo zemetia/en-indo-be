@@ -1,0 +1,30 @@
+[
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440001",
+    "email": "maria.sari@gmail.com",
+    "password": "$2a$12$zePPdFIQfbulT.HBM6Vu9uIlbJHed9/Ffavfo1aquDDAQrnf4EpMC",
+    "image_url": "https://via.placeholder.com/150",
+    "person_id": "550e8400-e29b-41d4-a716-446655440001"
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440002",
+    "email": "david.kusuma@gmail.com",
+    "password": "$2a$12$zePPdFIQfbulT.HBM6Vu9uIlbJHed9/Ffavfo1aquDDAQrnf4EpMC",
+    "image_url": "https://via.placeholder.com/150",
+    "person_id": "550e8400-e29b-41d4-a716-446655440002"
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440003",
+    "email": "sarah.lestari@gmail.com",
+    "password": "$2a$12$zePPdFIQfbulT.HBM6Vu9uIlbJHed9/Ffavfo1aquDDAQrnf4EpMC",
+    "image_url": "https://via.placeholder.com/150",
+    "person_id": "550e8400-e29b-41d4-a716-446655440003"
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440004",
+    "email": "jonathan.wijaya@gmail.com",
+    "password": "$2a$12$zePPdFIQfbulT.HBM6Vu9uIlbJHed9/Ffavfo1aquDDAQrnf4EpMC",
+    "image_url": "https://via.placeholder.com/150",
+    "person_id": "550e8400-e29b-41d4-a716-446655440004"
+  }
+]
