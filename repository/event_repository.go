@@ -32,6 +32,11 @@ type EventRepository interface {
 	DeleteFutureOccurrences(eventID uuid.UUID, fromDate time.Time) error
 	SetRecurrenceUntilDate(eventID uuid.UUID, untilDate time.Time) error
 	GetEventsWithRecurrenceInRange(startDate, endDate time.Time) ([]entity.Event, error)
+
+	// Church association methods
+	AssociateChurches(eventID uuid.UUID, churchIDs []uuid.UUID) error
+	DisassociateAllChurches(eventID uuid.UUID) error
+	ValidateChurchesExist(churchIDs []uuid.UUID) error
 }
 
 type EventFilters struct {
@@ -71,6 +76,7 @@ func (r *eventRepository) GetByID(id uuid.UUID) (*entity.Event, error) {
 	var event entity.Event
 	err := r.db.Preload("RecurrenceRule").
 		Preload("Lagu").
+		Preload("Churches").
 		Preload("DiscipleshipJourney").
 		Preload("EventPICs").
 		Preload("EventPICs.Person").
@@ -144,6 +150,7 @@ func (r *eventRepository) List(filters EventFilters) ([]entity.Event, int64, err
 	query := r.db.Model(&entity.Event{}).
 		Preload("RecurrenceRule").
 		Preload("Lagu").
+		Preload("Churches").
 		Preload("DiscipleshipJourney").
 		Preload("EventPICs").
 		Preload("EventPICs.Person")
@@ -185,6 +192,7 @@ func (r *eventRepository) GetByDateRange(startDate, endDate time.Time, filters E
 	query := r.db.Model(&entity.Event{}).
 		Preload("RecurrenceRule").
 		Preload("Lagu").
+		Preload("Churches").
 		Preload("DiscipleshipJourney").
 		Preload("EventPICs").
 		Preload("EventPICs.Person").
@@ -300,6 +308,7 @@ func (r *eventRepository) GetEventsWithRecurrenceInRange(startDate, endDate time
 	// This includes events that start before the range but have recurrence rules
 	err := r.db.Preload("RecurrenceRule").
 		Preload("Lagu").
+		Preload("Churches").
 		Preload("DiscipleshipJourney").
 		Preload("EventPICs").
 		Preload("EventPICs.Person").
@@ -311,4 +320,69 @@ func (r *eventRepository) GetEventsWithRecurrenceInRange(startDate, endDate time
 		Find(&events).Error
 
 	return events, err
+}
+
+// AssociateChurches associates multiple churches with an event
+func (r *eventRepository) AssociateChurches(eventID uuid.UUID, churchIDs []uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// First, get the event
+		var event entity.Event
+		if err := tx.First(&event, eventID).Error; err != nil {
+			return err
+		}
+
+		// Clear existing associations
+		if err := tx.Model(&event).Association("Churches").Clear(); err != nil {
+			return err
+		}
+
+		// If there are no church IDs to associate, we're done
+		if len(churchIDs) == 0 {
+			return nil
+		}
+
+		// Get churches by IDs
+		var churches []entity.Church
+		if err := tx.Where("id IN ?", churchIDs).Find(&churches).Error; err != nil {
+			return err
+		}
+
+		// Associate the churches
+		if err := tx.Model(&event).Association("Churches").Append(churches); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// DisassociateAllChurches removes all church associations from an event
+func (r *eventRepository) DisassociateAllChurches(eventID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var event entity.Event
+		if err := tx.First(&event, eventID).Error; err != nil {
+			return err
+		}
+
+		return tx.Model(&event).Association("Churches").Clear()
+	})
+}
+
+// ValidateChurchesExist checks if all provided church IDs exist in the database
+func (r *eventRepository) ValidateChurchesExist(churchIDs []uuid.UUID) error {
+	if len(churchIDs) == 0 {
+		return nil
+	}
+
+	var count int64
+	err := r.db.Model(&entity.Church{}).Where("id IN ?", churchIDs).Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if int(count) != len(churchIDs) {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

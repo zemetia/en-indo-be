@@ -121,7 +121,103 @@ func (s *eventService) CreateEvent(req *dto.CreateEventRequest) (*dto.EventRespo
 		return nil, fmt.Errorf("failed to create event: %w", err)
 	}
 
-	return s.entityToResponse(event), nil
+	// Handle church associations if provided
+	if len(req.ChurchIDs) > 0 {
+		// Validate that all churches exist
+		if err := s.eventRepo.ValidateChurchesExist(req.ChurchIDs); err != nil {
+			return nil, fmt.Errorf("one or more church IDs not found")
+		}
+
+		if err := s.eventRepo.AssociateChurches(event.ID, req.ChurchIDs); err != nil {
+			return nil, fmt.Errorf("failed to associate churches with event: %w", err)
+		}
+	}
+
+	// Handle EventPIC assignments if provided
+	if len(req.EventPICs) > 0 {
+		var eventPICs []entity.EventPIC
+
+		// Validate PIC assignments
+		primaryCount := 0
+		for _, picReq := range req.EventPICs {
+			if picReq.IsPrimary {
+				primaryCount++
+			}
+
+			// Validate that Person exists
+			if err := s.eventPICRepo.ValidatePersonExists(picReq.PersonID); err != nil {
+				return nil, fmt.Errorf("person with ID %s not found", picReq.PersonID)
+			}
+		}
+		if primaryCount > 1 {
+			return nil, fmt.Errorf("cannot assign multiple primary PICs")
+		}
+
+		// Create PIC entities
+		for _, picReq := range req.EventPICs {
+			// Parse start date
+			startDate, err := time.Parse("2006-01-02", picReq.StartDate)
+			if err != nil {
+				return nil, fmt.Errorf("invalid start date format for PIC: %w", err)
+			}
+
+			// Parse end date if provided
+			var endDate *time.Time
+			if picReq.EndDate != nil {
+				parsed, err := time.Parse("2006-01-02", *picReq.EndDate)
+				if err != nil {
+					return nil, fmt.Errorf("invalid end date format for PIC: %w", err)
+				}
+				endDate = &parsed
+			}
+
+			eventPIC := entity.EventPIC{
+				EventID:           event.ID,
+				PersonID:          picReq.PersonID,
+				Role:              picReq.Role,
+				Description:       picReq.Description,
+				IsActive:          true,
+				IsPrimary:         picReq.IsPrimary,
+				StartDate:         startDate,
+				EndDate:           endDate,
+				CanEdit:           picReq.CanEdit,
+				CanDelete:         picReq.CanDelete,
+				CanAssignPIC:      picReq.CanAssignPIC,
+				NotifyOnChanges:   picReq.NotifyOnChanges,
+				NotifyOnReminders: picReq.NotifyOnReminders,
+			}
+
+			eventPICs = append(eventPICs, eventPIC)
+		}
+
+		// Create all PICs
+		if err := s.eventPICRepo.CreateMultiple(eventPICs); err != nil {
+			return nil, fmt.Errorf("failed to create event PICs: %w", err)
+		}
+
+		// Create history records for each PIC assignment
+		for _, pic := range eventPICs {
+			history := &entity.EventPICHistory{
+				EventID:    event.ID,
+				PersonID:   pic.PersonID,
+				Action:     entity.EventPICActionAssigned,
+				NewRole:    pic.Role,
+				ChangedBy:  uuid.Nil, // System-assigned during event creation
+				Reason:     "Initial PIC assignment during event creation",
+				ActionDate: time.Now(),
+			}
+			// Ignore history creation errors to not block event creation
+			s.eventPICRepo.CreateHistory(history)
+		}
+	}
+
+	// Reload event with associations
+	updatedEvent, err := s.eventRepo.GetByID(event.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload event: %w", err)
+	}
+
+	return s.entityToResponse(updatedEvent), nil
 }
 
 func (s *eventService) CreateEventWithPICs(req *dto.CreateEventRequest, createdBy uuid.UUID) (*dto.EventResponse, error) {
@@ -310,7 +406,20 @@ func (s *eventService) UpdateEvent(id uuid.UUID, req *dto.UpdateEventRequest) (*
 		return nil, fmt.Errorf("failed to update event: %w", err)
 	}
 
-	return s.entityToResponse(event), nil
+	// Handle church associations if provided
+	if req.ChurchIDs != nil {
+		if err := s.eventRepo.AssociateChurches(event.ID, *req.ChurchIDs); err != nil {
+			return nil, fmt.Errorf("failed to update church associations: %w", err)
+		}
+	}
+
+	// Reload event with updated associations
+	updatedEvent, err := s.eventRepo.GetByID(event.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload event: %w", err)
+	}
+
+	return s.entityToResponse(updatedEvent), nil
 }
 
 func (s *eventService) DeleteEvent(id uuid.UUID) error {
@@ -544,19 +653,34 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 	if len(event.EventPICs) > 0 {
 		eventPICs := make([]dto.EventPICResponse, 0, len(event.EventPICs))
 		var primaryPIC *dto.EventPICResponse
-		
+
 		for _, pic := range event.EventPICs {
-			picResponse := dto.EventPICResponse{
-				ID:          pic.ID,
-				EventID:     pic.EventID,
-				PersonID:    pic.PersonID,
-				Person: dto.PersonSummary{
+			// Create PersonSummary - handle nil Person gracefully
+			var personSummary dto.PersonSummary
+			if pic.Person.ID != uuid.Nil {
+				personSummary = dto.PersonSummary{
 					ID:           pic.Person.ID,
 					Nama:         pic.Person.Nama,
 					Email:        pic.Person.Email,
 					NomorTelepon: pic.Person.NomorTelepon,
 					ChurchID:     pic.Person.ChurchID,
-				},
+				}
+			} else {
+				// If Person wasn't loaded, use PersonID with empty fields
+				personSummary = dto.PersonSummary{
+					ID:           pic.PersonID,
+					Nama:         "",
+					Email:        "",
+					NomorTelepon: "",
+					ChurchID:     uuid.Nil,
+				}
+			}
+
+			picResponse := dto.EventPICResponse{
+				ID:                pic.ID,
+				EventID:           pic.EventID,
+				PersonID:          pic.PersonID,
+				Person:            personSummary,
 				Role:              pic.Role,
 				Description:       pic.Description,
 				IsActive:          pic.IsActive,
@@ -571,14 +695,14 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 				CreatedAt:         pic.CreatedAt,
 				UpdatedAt:         pic.UpdatedAt,
 			}
-			
+
 			eventPICs = append(eventPICs, picResponse)
-			
+
 			if pic.IsPrimary && pic.IsActive {
 				primaryPIC = &picResponse
 			}
 		}
-		
+
 		response.EventPICs = eventPICs
 		response.PrimaryPIC = primaryPIC
 	}
@@ -634,6 +758,31 @@ func (s *eventService) entityToResponse(event *entity.Event) *dto.EventResponse 
 			}
 		}
 		response.Lagu = laguResponses
+	}
+
+	// Convert Churches
+	if len(event.Churches) > 0 {
+		churchResponses := make([]dto.ChurchResponse, len(event.Churches))
+		for i, church := range event.Churches {
+			churchResponses[i] = dto.ChurchResponse{
+				ID:          church.ID,
+				Name:        church.Name,
+				Address:     church.Address,
+				ChurchCode:  church.ChurchCode,
+				Phone:       church.Phone,
+				Email:       church.Email,
+				Website:     church.Website,
+				Latitude:    church.Latitude,
+				Longitude:   church.Longitude,
+				KabupatenID: church.KabupatenID,
+				Kabupaten:   church.Kabupaten.Name,
+				ProvinsiID:  church.Kabupaten.ProvinsiID,
+				Provinsi:    church.Kabupaten.Provinsi.Name,
+				CreatedAt:   church.CreatedAt.Format("2006-01-02 15:04:05"),
+				UpdatedAt:   church.UpdatedAt.Format("2006-01-02 15:04:05"),
+			}
+		}
+		response.Churches = churchResponses
 	}
 
 	return response

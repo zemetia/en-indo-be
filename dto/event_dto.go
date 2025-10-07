@@ -33,6 +33,9 @@ type CreateEventRequest struct {
 	RecurrenceRule *CreateRecurrenceRuleRequest `json:"recurrenceRule,omitempty"`
 	LaguIDs        []uuid.UUID                  `json:"laguIds,omitempty"`
 	
+	// Event organizers (penyelenggara) - church IDs
+	ChurchIDs      []uuid.UUID                  `json:"churchIds,omitempty"`
+	
 	// Event PIC assignments during creation
 	EventPICs      []CreateEventPICRequest      `json:"eventPics,omitempty"`
 }
@@ -75,6 +78,9 @@ type UpdateEventRequest struct {
 	ExpectedKids        *int `json:"expectedKids,omitempty"`
 
 	LaguIDs *[]uuid.UUID `json:"laguIds,omitempty"`
+
+	// Event organizers (penyelenggara) - church IDs  
+	ChurchIDs *[]uuid.UUID `json:"churchIds,omitempty"`
 }
 
 // Update type for recurring events
@@ -133,6 +139,9 @@ type EventResponse struct {
 
 	RecurrenceRule *RecurrenceRuleResponse `json:"recurrenceRule,omitempty"`
 	Lagu           []LaguResponse          `json:"lagu,omitempty"`
+	
+	// Event organizers (penyelenggara)
+	Churches       []ChurchResponse        `json:"churches,omitempty"`
 	
 	// Event PIC information
 	EventPICs      []EventPICResponse      `json:"eventPics,omitempty"`

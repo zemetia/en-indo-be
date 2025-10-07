@@ -23,6 +23,7 @@ func Migrate(db *gorm.DB) error {
 		&entity.RecurrenceRule{},
 		&entity.RecurrenceException{},
 		&entity.Event{},
+		&entity.EventType{},
 		&entity.EventPIC{},
 		&entity.EventPICRole{},
 		&entity.EventPICHistory{},
@@ -62,6 +63,21 @@ func Migrate(db *gorm.DB) error {
 
 	// Add expected participant fields to events table
 	if err := AddEventParticipantFields(db); err != nil {
+		return err
+	}
+
+	// Add event_churches junction table for event-church many-to-many relationship
+	if err := AddEventChurchesTable(db); err != nil {
+		return err
+	}
+
+	// Add event_types table
+	if err := AddEventTypesTable(db); err != nil {
+		return err
+	}
+
+	// Drop icon column from event_types table
+	if err := DropEventTypesIconColumn(db); err != nil {
 		return err
 	}
 

@@ -35,6 +35,9 @@ type Event struct {
 
 	Lagu []Lagu `gorm:"many2many:event_lagu;"`
 	
+	// Event organizers (penyelenggara) - many-to-many relationship with churches
+	Churches []Church `gorm:"many2many:event_churches;"`
+	
 	// Event PIC (Penanggung Jawab Event) relationships
 	EventPICs []EventPIC `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 

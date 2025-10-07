@@ -14,21 +14,22 @@ type EventPICRepository interface {
 	GetByID(id uuid.UUID) (*entity.EventPIC, error)
 	Update(eventPIC *entity.EventPIC) error
 	Delete(id uuid.UUID) error
-	
+
 	// Event-specific PIC operations
 	GetPICsByEventID(eventID uuid.UUID) ([]entity.EventPIC, error)
 	GetPrimaryPICByEventID(eventID uuid.UUID) (*entity.EventPIC, error)
 	GetActivePICsByEventID(eventID uuid.UUID) ([]entity.EventPIC, error)
-	
+
 	// Person-specific PIC operations
 	GetPICsByPersonID(personID uuid.UUID) ([]entity.EventPIC, error)
 	GetActivePICsByPersonID(personID uuid.UUID) ([]entity.EventPIC, error)
-	
+
 	// Validation and business logic support
 	HasPersonPICRoleForEvent(eventID, personID uuid.UUID) (bool, error)
 	IsPrimaryPICForEvent(eventID, personID uuid.UUID) (bool, error)
 	CountActivePICsForEvent(eventID uuid.UUID) (int64, error)
 	CountPrimaryPICsForEvent(eventID uuid.UUID) (int64, error)
+	ValidatePersonExists(personID uuid.UUID) error
 	
 	// Advanced queries
 	List(filters EventPICFilters) ([]entity.EventPIC, int64, error)
@@ -205,6 +206,18 @@ func (r *eventPICRepository) CountPrimaryPICsForEvent(eventID uuid.UUID) (int64,
 		Where("end_date IS NULL OR end_date >= ?", time.Now().Format("2006-01-02")).
 		Count(&count).Error
 	return count, err
+}
+
+func (r *eventPICRepository) ValidatePersonExists(personID uuid.UUID) error {
+	var count int64
+	err := r.db.Model(&entity.Person{}).Where("id = ?", personID).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // Advanced queries

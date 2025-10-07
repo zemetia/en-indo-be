@@ -34,4 +34,5 @@ func RegisterDependencies(injector *do.Injector) {
 	ProvidePelayananDependencies(injector)
 	ProvidePersonDependencies(injector)
 	ProvideVisitorDependencies(injector)
+	ProvideEventTypeDependencies(injector)
 }
