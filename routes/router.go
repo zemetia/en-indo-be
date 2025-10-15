@@ -23,4 +23,7 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	// Register event routes with /api prefix
 	EventRoutes(api, injector)
 	EventTypeRoutes(api, injector)
+	EventDepartment(server, injector)
+	EventParticipantRoutes(api, injector)
+	KetersediaanRoutes(api, injector)
 }

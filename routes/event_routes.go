@@ -3,27 +3,15 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/samber/do"
-	"github.com/zemetia/en-indo-be/constants"
 	"github.com/zemetia/en-indo-be/controller"
-	"github.com/zemetia/en-indo-be/repository"
-	"github.com/zemetia/en-indo-be/service"
-	"gorm.io/gorm"
 )
 
 func EventRoutes(router *gin.RouterGroup, injector *do.Injector) {
-	// Get dependencies from injector
-	db := do.MustInvokeNamed[*gorm.DB](injector, constants.DB)
-
-	// Create repositories and services
-	eventRepo := repository.NewEventRepository(db)
-	eventPICRepo := repository.NewEventPICRepository(db)
-	eventService := service.NewEventService(eventRepo, eventPICRepo)
-	eventPICService := service.NewEventPICService(eventPICRepo, eventRepo)
-	
-	// Create controllers
-	eventController := controller.NewEventController(eventService)
-	eventPICController := controller.NewEventPICController(eventPICService)
-	eventPICRoleController := controller.NewEventPICRoleController(eventPICService)
+	// Get controllers from DI container
+	eventController := do.MustInvoke[*controller.EventController](injector)
+	eventPICController := do.MustInvoke[*controller.EventPICController](injector)
+	eventPICRoleController := do.MustInvoke[*controller.EventPICRoleController](injector)
+	eventParticipantController := do.MustInvoke[*controller.EventParticipantController](injector)
 
 	// Event CRUD routes - keep simple ones here
 	router.POST("/events", eventController.CreateEvent)
@@ -46,13 +34,17 @@ func EventRoutes(router *gin.RouterGroup, injector *do.Injector) {
 	// Event occurrences routes - specific paths first
 	router.GET("/events/:id/occurrences", eventController.GetEventOccurrences)
 	router.GET("/events/:id/next", eventController.GetNextOccurrence)
-	
+
+	// Event participant routes - specific paths before basic CRUD
+	router.GET("/events/:id/participants", eventParticipantController.GetEventParticipants)
+	router.GET("/events/:id/attendance/report", eventParticipantController.GetAttendanceReport)
+
 	// Recurring event management routes - three-tier modifications
 	router.PUT("/events/:id/series", eventController.UpdateRecurringEvent)       // Update entire series
 	router.PUT("/events/:id/occurrence", eventController.UpdateSingleOccurrence) // Update single occurrence
 	router.PUT("/events/:id/future", eventController.UpdateFutureOccurrences)    // Update this and future occurrences
 	router.DELETE("/events/:id/occurrence", eventController.DeleteOccurrence)
-	
+
 	// Basic CRUD routes with :id param - put at end to avoid conflicts
 	router.GET("/events/:id", eventController.GetEvent)
 	router.PUT("/events/:id", eventController.UpdateEvent)

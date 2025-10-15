@@ -6,6 +6,21 @@ import (
 )
 
 func Migrate(db *gorm.DB) error {
+	// Fix visitor kabupaten foreign key constraint before AutoMigrate
+	if err := FixVisitorKabupatenFK(db); err != nil {
+		return err
+	}
+
+	// Clean up duplicate and invalid participant records before AutoMigrate
+	if err := CleanupDuplicateParticipants(db); err != nil {
+		return err
+	}
+
+	// Fix polymorphic foreign key constraints (must run BEFORE AutoMigrate)
+	if err := FixPolymorphicFKConstraints(db); err != nil {
+		return err
+	}
+
 	// First run the auto migration for all entities
 	if err := db.AutoMigrate(
 		&entity.User{},
@@ -31,6 +46,9 @@ func Migrate(db *gorm.DB) error {
 		&entity.Lagu{},
 		&entity.Visitor{},
 		&entity.VisitorInformation{},
+		&entity.Ketersediaan{},
+		&entity.EventDepartment{},
+		&entity.EventParticipant{},
 	); err != nil {
 		return err
 	}
@@ -78,6 +96,23 @@ func Migrate(db *gorm.DB) error {
 
 	// Drop icon column from event_types table
 	if err := DropEventTypesIconColumn(db); err != nil {
+		return err
+	}
+
+	// Add event_departments junction table for event-department many-to-many relationship
+	if err := AddEventDepartmentsTable(db); err != nil {
+		return err
+	}
+
+	// Add event_participants table with proper indexes
+	// Note: CleanupDuplicateParticipants is now called before AutoMigrate
+	if err := AddEventParticipantsTable(db); err != nil {
+		return err
+	}
+
+	// Add qr_scan_timestamp column to event_participants table
+	migration := &AddQRTimestampToParticipants{}
+	if err := migration.Up(db); err != nil {
 		return err
 	}
 

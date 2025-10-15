@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/zemetia/en-indo-be/dto"
 	"github.com/zemetia/en-indo-be/service"
 	"github.com/zemetia/en-indo-be/utils"
@@ -42,24 +43,21 @@ func Authenticate(jwtService service.JWTService, userService service.UserService
 			return
 		}
 
-		// Get user data to extract PersonID
-		user, err := userService.GetUserById(ctx, userId)
-		if err != nil {
-			response := utils.BuildResponseFailed(dto.MESSAGE_FAILED_PROSES_REQUEST, "user not found", nil)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
-			return
-		}
+		// Extract person_id from JWT token claims
+		claims := token.Claims.(jwt.MapClaims)
+		personID, ok := claims["person_id"].(string)
 
 		ctx.Set("token", authHeader)
 		ctx.Set("user_id", userId)
-		
-		// Only set person_id if it's not an empty UUID
-		emptyUUID := "00000000-0000-0000-0000-000000000000"
-		personIDStr := user.PersonID.String()
-		if personIDStr != emptyUUID {
-			ctx.Set("person_id", personIDStr)
+
+		// Set person_id from JWT claims if available
+		if ok && personID != "" {
+			emptyUUID := "00000000-0000-0000-0000-000000000000"
+			if personID != emptyUUID {
+				ctx.Set("person_id", personID)
+			}
 		}
-		
+
 		ctx.Next()
 	}
 }

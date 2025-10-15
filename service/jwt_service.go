@@ -10,14 +10,15 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(userId string, email string, expiredAt int) string
+	GenerateToken(userId string, personId string, email string, expiredAt int) string
 	ValidateToken(token string) (*jwt.Token, error)
 	GetUserIDByToken(token string) (string, error)
 }
 
 type jwtCustomClaim struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID   string `json:"user_id"`
+	PersonID string `json:"person_id"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -41,11 +42,12 @@ func getSecretKey() string {
 	return secretKey
 }
 
-func (j *jwtService) GenerateToken(userId string, email string, expiredAt int) string {
+func (j *jwtService) GenerateToken(userId string, personId string, email string, expiredAt int) string {
 	claims := jwtCustomClaim{
-		userId,
-		email,
-		jwt.RegisteredClaims{
+		UserID:   userId,
+		PersonID: personId,
+		Role:     email,
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiredAt) * time.Hour)),
 			Issuer:    j.issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

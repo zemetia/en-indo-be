@@ -11,7 +11,7 @@ type Visitor struct {
 	IGUsername  *string              `gorm:"type:varchar(100);null" json:"ig_username"`
 	PhoneNumber *string              `gorm:"type:varchar(20);null" json:"phone_number"`
 	KabupatenID *uint                `gorm:"type:int;null" json:"kabupaten_id"`
-	Kabupaten   Kabupaten            `gorm:"foreignKey:KabupatenID" json:"kabupaten"`
+	Kabupaten   Kabupaten            `gorm:"foreignKey:KabupatenID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"kabupaten"`
 	Information []VisitorInformation `gorm:"foreignKey:VisitorID" json:"information"`
 
 	Timestamp

@@ -1,9 +1,6 @@
 package controller
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -311,14 +308,7 @@ func (c *userController) SetupPassword(ctx *gin.Context) {
 func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 	personID := ctx.Param("person_id")
 
-	// Debug logging
-	fmt.Printf("[DEBUG] ToggleActivationStatus - PersonID: %s\n", personID)
-	fmt.Printf("[DEBUG] Request Method: %s\n", ctx.Request.Method)
-	fmt.Printf("[DEBUG] Content-Type: %s\n", ctx.GetHeader("Content-Type"))
-	fmt.Printf("[DEBUG] Authorization: %s\n", ctx.GetHeader("Authorization"))
-
 	if personID == "" {
-		fmt.Printf("[ERROR] Person ID is empty\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": "Person ID is required",
 			"error":   "person_id parameter is missing",
@@ -328,7 +318,6 @@ func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 
 	personUUID, err := uuid.Parse(personID)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to parse person ID: %v\n", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid person ID format",
 			"error":   err.Error(),
@@ -336,28 +325,17 @@ func (c *userController) ToggleActivationStatus(ctx *gin.Context) {
 		return
 	}
 
-	// Read raw body for debugging
-	body, _ := ctx.GetRawData()
-	fmt.Printf("[DEBUG] Raw request body: %s\n", string(body))
-
-	// Reset body reader for ShouldBindJSON
-	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
 	var req struct {
 		IsActive bool `json:"is_active"`
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		fmt.Printf("[ERROR] Failed to bind JSON: %v\n", err)
-		fmt.Printf("[ERROR] Request body was: %s\n", string(body))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request data",
 			"error":   err.Error(),
 		})
 		return
 	}
-
-	fmt.Printf("[DEBUG] Parsed request - IsActive: %v\n", req.IsActive)
 
 	// Get current user's person ID from JWT token to prevent self-deactivation
 	currentPersonIDStr, exists := ctx.Get("person_id")

@@ -32,6 +32,7 @@ type EventRepository interface {
 	DeleteFutureOccurrences(eventID uuid.UUID, fromDate time.Time) error
 	SetRecurrenceUntilDate(eventID uuid.UUID, untilDate time.Time) error
 	GetEventsWithRecurrenceInRange(startDate, endDate time.Time) ([]entity.Event, error)
+	GetNonRecurringEventsInRange(startDate, endDate time.Time) ([]entity.Event, error)
 
 	// Church association methods
 	AssociateChurches(eventID uuid.UUID, churchIDs []uuid.UUID) error
@@ -314,9 +315,26 @@ func (r *eventRepository) GetEventsWithRecurrenceInRange(startDate, endDate time
 		Preload("EventPICs.Person").
 		Joins("LEFT JOIN recurrence_rules ON events.recurrence_rule_id = recurrence_rules.id").
 		Where(`
-			(events.recurrence_rule_id IS NOT NULL) AND 
+			(events.recurrence_rule_id IS NOT NULL) AND
 			(events.event_date <= ? OR recurrence_rules.until IS NULL OR recurrence_rules.until >= ?)
 		`, endDate, startDate).
+		Find(&events).Error
+
+	return events, err
+}
+
+// GetNonRecurringEventsInRange gets all non-recurring (one-time) events within the date range
+func (r *eventRepository) GetNonRecurringEventsInRange(startDate, endDate time.Time) ([]entity.Event, error) {
+	var events []entity.Event
+
+	// Get all non-recurring events that fall within the date range
+	err := r.db.Preload("Lagu").
+		Preload("Churches").
+		Preload("DiscipleshipJourney").
+		Preload("EventPICs").
+		Preload("EventPICs.Person").
+		Where("recurrence_rule_id IS NULL").
+		Where("event_date >= ? AND event_date <= ?", startDate, endDate).
 		Find(&events).Error
 
 	return events, err

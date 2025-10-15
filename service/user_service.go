@@ -388,46 +388,32 @@ func (s *userService) Delete(ctx context.Context, userId string) error {
 }
 
 func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto.UserLoginResponse, error) {
-	// Debug logging for login attempts
-	fmt.Printf("[DEBUG] Login attempt for email: %s\n", req.Email)
-
 	check, flag, err := s.userRepo.CheckEmail(ctx, nil, req.Email)
 	if err != nil || !flag {
-		fmt.Printf("[DEBUG] Email not found: %s\n", req.Email)
 		return dto.UserLoginResponse{}, dto.ErrEmailNotFound
 	}
 
-	fmt.Printf("[DEBUG] User found - ID: %s, IsActive: %t\n", check.ID, check.IsActive)
-
 	// Check if user is active
 	if !check.IsActive {
-		fmt.Printf("[DEBUG] User account inactive for email: %s\n", req.Email)
 		return dto.UserLoginResponse{}, dto.ErrUserInactive
 	}
 
 	// Check if user has active pelayanan assignments
 	hasActivePelayanan, err := s.userRepo.HasActivePelayanan(ctx, check.PersonID)
 	if err != nil {
-		fmt.Printf("[DEBUG] Error checking pelayanan for PersonID: %s, error: %v\n", check.PersonID, err)
 		return dto.UserLoginResponse{}, dto.ErrGetPelayanan
 	}
 
-	fmt.Printf("[DEBUG] HasActivePelayanan: %t for PersonID: %s\n", hasActivePelayanan, check.PersonID)
-
 	if !hasActivePelayanan {
 		// Auto-deactivate user if no pelayanan assignments
-		fmt.Printf("[DEBUG] No active pelayanan for PersonID: %s, deactivating user\n", check.PersonID)
 		s.userRepo.UpdateActivationStatus(ctx, check.ID, false)
 		return dto.UserLoginResponse{}, dto.ErrUserNoPelayanan
 	}
 
 	checkPassword, err := helpers.CheckPassword(check.Password, []byte(req.Password))
 	if err != nil || !checkPassword {
-		fmt.Printf("[DEBUG] Password check failed for email: %s, err: %v\n", req.Email, err)
 		return dto.UserLoginResponse{}, dto.ErrPasswordNotMatch
 	}
-
-	fmt.Printf("[DEBUG] Password check successful for email: %s\n", req.Email)
 
 	pelayanan, err := s.personRepo.GetPelayananChurchByID(ctx, check.PersonID)
 	if err != nil {
@@ -462,10 +448,11 @@ func (s *userService) Verify(ctx context.Context, req dto.UserLoginRequest) (dto
 		LastLoginAt: &now,
 	})
 
-	token := s.jwtService.GenerateToken(check.ID.String(), check.Email, 24*3)
+	token := s.jwtService.GenerateToken(check.ID.String(), check.PersonID.String(), check.Email, 24*3)
 
 	return dto.UserLoginResponse{
 		Token:                 token,
+		PersonID:              check.PersonID.String(),
 		Pelayanan:             pelayananResponses,
 		Nama:                  check.Person.Nama,
 		ImageUrl:              check.ImageUrl,

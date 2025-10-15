@@ -541,15 +541,24 @@ func (s *eventService) GetOccurrencesInRange(req *dto.GetEventOccurrencesRequest
 		return nil, fmt.Errorf("invalid end date format: %w", err)
 	}
 
-	// Get all events that could have occurrences in this range
-	events, err := s.eventRepo.GetEventsWithRecurrenceInRange(startDate, endDate)
+	// Get recurring events that could have occurrences in this range
+	recurringEvents, err := s.eventRepo.GetEventsWithRecurrenceInRange(startDate, endDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recurring events: %w", err)
 	}
 
+	// Get non-recurring events in this range
+	nonRecurringEvents, err := s.eventRepo.GetNonRecurringEventsInRange(startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get non-recurring events: %w", err)
+	}
+
+	// Combine both types of events
+	allEvents := append(recurringEvents, nonRecurringEvents...)
+
 	var allOccurrences []dto.EventOccurrenceResponse
 
-	for _, event := range events {
+	for _, event := range allEvents {
 		occurrences, err := s.generateOccurrences(&event, startDate, endDate)
 		if err != nil {
 			continue // Skip events with generation errors

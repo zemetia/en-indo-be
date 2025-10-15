@@ -115,6 +115,7 @@ type (
 
 	UserLoginResponse struct {
 		Token                 string                       `json:"token"`
+		PersonID              string                       `json:"person_id"`
 		Pelayanan             []PersonHasPelayananResponse `json:"pelayanan"`
 		Nama                  string                       `json:"nama"`
 		ImageUrl              string                       `json:"image_url"`
