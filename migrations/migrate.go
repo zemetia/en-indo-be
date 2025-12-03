@@ -116,5 +116,11 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
+	// Add is_active column to person_pelayanan_gereja table
+	isActiveMigration := &AddIsActiveToPersonPelayananGereja{}
+	if err := isActiveMigration.Up(db); err != nil {
+		return err
+	}
+
 	return nil
 }

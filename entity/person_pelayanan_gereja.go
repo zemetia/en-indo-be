@@ -10,6 +10,7 @@ type PersonPelayananGereja struct {
 	Pelayanan   Pelayanan `gorm:"foreignKey:PelayananID"`
 	ChurchID    uuid.UUID `gorm:"type:char(36);not null"`
 	Church      Church    `gorm:"foreignKey:ChurchID"`
+	IsActive    bool      `gorm:"default:true" json:"is_active"`
 
 	Timestamp
 }

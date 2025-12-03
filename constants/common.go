@@ -16,6 +16,7 @@ const (
 	UserService           = "UserService"
 	PelayananService      = "PelayananService"
 	LifeGroupService      = "LifeGroupService"
+	MusikService          = "MusikService"
 	EventTypeRepository   = "EventTypeRepository"
 	EventTypeService      = "EventTypeService"
 	EventTypeController   = "EventTypeController"

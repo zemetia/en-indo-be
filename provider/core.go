@@ -38,4 +38,5 @@ func RegisterDependencies(injector *do.Injector) {
 	ProvideEventTypeDependencies(injector)
 	ProvideEventDepartmentDependencies(injector)
 	ProvideEventParticipantDependencies(injector)
+	ProvideMusikDependencies(injector)
 }

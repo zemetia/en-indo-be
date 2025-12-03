@@ -26,4 +26,7 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 	EventDepartment(server, injector)
 	EventParticipantRoutes(api, injector)
 	KetersediaanRoutes(api, injector)
+
+	// Register musik routes
+	Musik(server, injector)
 }

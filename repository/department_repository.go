@@ -10,6 +10,7 @@ type DepartmentRepository interface {
 	Create(department *entity.Department) error
 	GetAll() ([]entity.Department, error)
 	GetByID(id uuid.UUID) (*entity.Department, error)
+	GetByName(name string) (*entity.Department, error)
 	Update(department *entity.Department) error
 	Delete(id uuid.UUID) error
 }
@@ -37,6 +38,12 @@ func (r *departmentRepository) GetAll() ([]entity.Department, error) {
 func (r *departmentRepository) GetByID(id uuid.UUID) (*entity.Department, error) {
 	var department entity.Department
 	err := r.db.First(&department, "id = ?", id).Error
+	return &department, err
+}
+
+func (r *departmentRepository) GetByName(name string) (*entity.Department, error) {
+	var department entity.Department
+	err := r.db.Where("name = ?", name).First(&department).Error
 	return &department, err
 }
 

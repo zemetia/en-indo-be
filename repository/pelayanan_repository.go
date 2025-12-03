@@ -27,6 +27,10 @@ type PelayananRepository interface {
 	GetAssignmentByID(ctx context.Context, id uuid.UUID) (*entity.PersonPelayananGereja, error)
 	GetAssignmentByPersonPelayananChurch(ctx context.Context, personID, pelayananID, churchID uuid.UUID) (*entity.PersonPelayananGereja, error)
 	UpdatePelayananAssignment(ctx context.Context, assignment *entity.PersonPelayananGereja) error
+
+	// Music-specific methods
+	GetAssignmentsByDepartmentAndChurches(ctx context.Context, departmentID uuid.UUID, churchIDs []uuid.UUID) ([]entity.PersonPelayananGereja, error)
+	GetAssignmentsByPersonAndDepartment(ctx context.Context, personID uuid.UUID, departmentID uuid.UUID) ([]entity.PersonPelayananGereja, error)
 }
 
 type pelayananRepository struct {
@@ -199,4 +203,45 @@ func (r *pelayananRepository) GetAssignmentByPersonPelayananChurch(ctx context.C
 
 func (r *pelayananRepository) UpdatePelayananAssignment(ctx context.Context, assignment *entity.PersonPelayananGereja) error {
 	return r.db.WithContext(ctx).Save(assignment).Error
+}
+
+// Music-specific method implementations
+
+func (r *pelayananRepository) GetAssignmentsByDepartmentAndChurches(ctx context.Context, departmentID uuid.UUID, churchIDs []uuid.UUID) ([]entity.PersonPelayananGereja, error) {
+	var assignments []entity.PersonPelayananGereja
+
+	query := r.db.WithContext(ctx).
+		Preload("Person").
+		Preload("Pelayanan").
+		Preload("Pelayanan.Department").
+		Preload("Church").
+		Joins("JOIN pelayanan ON pelayanan.id = person_pelayanan_gereja.pelayanan_id").
+		Where("pelayanan.department_id = ?", departmentID)
+
+	if len(churchIDs) > 0 {
+		query = query.Where("person_pelayanan_gereja.church_id IN ?", churchIDs)
+	}
+
+	if err := query.Find(&assignments).Error; err != nil {
+		return nil, err
+	}
+
+	return assignments, nil
+}
+
+func (r *pelayananRepository) GetAssignmentsByPersonAndDepartment(ctx context.Context, personID uuid.UUID, departmentID uuid.UUID) ([]entity.PersonPelayananGereja, error) {
+	var assignments []entity.PersonPelayananGereja
+
+	if err := r.db.WithContext(ctx).
+		Preload("Person").
+		Preload("Pelayanan").
+		Preload("Pelayanan.Department").
+		Preload("Church").
+		Joins("JOIN pelayanan ON pelayanan.id = person_pelayanan_gereja.pelayanan_id").
+		Where("person_pelayanan_gereja.person_id = ? AND pelayanan.department_id = ?", personID, departmentID).
+		Find(&assignments).Error; err != nil {
+		return nil, err
+	}
+
+	return assignments, nil
 }
