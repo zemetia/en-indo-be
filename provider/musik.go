@@ -30,4 +30,21 @@ func ProvideMusikDependencies(injector *do.Injector) {
 	do.Provide(injector, func(i *do.Injector) (controller.MusikController, error) {
 		return controller.NewMusikController(musikService), nil
 	})
+
+	// Lagu Repository
+	laguRepository := repository.NewLaguRepository(db)
+	do.ProvideNamed(injector, constants.LaguRepository, func(i *do.Injector) (repository.LaguRepository, error) {
+		return laguRepository, nil
+	})
+
+	// Lagu Service
+	laguService := service.NewLaguService(laguRepository)
+	do.ProvideNamed(injector, constants.LaguService, func(i *do.Injector) (service.LaguService, error) {
+		return laguService, nil
+	})
+
+	// Lagu Controller
+	do.ProvideNamed(injector, constants.LaguController, func(i *do.Injector) (controller.LaguController, error) {
+		return controller.NewLaguController(laguService), nil
+	})
 }

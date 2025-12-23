@@ -20,6 +20,7 @@ type PersonRepository interface {
 	Update(ctx context.Context, person *entity.Person) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetPelayananChurchByID(ctx context.Context, personID uuid.UUID) ([]entity.PersonPelayananGereja, error)
+	GetPeopleWithoutDepartmentInChurches(ctx context.Context, departmentID uuid.UUID, churchIDs []uuid.UUID) ([]entity.Person, error)
 }
 
 type personRepository struct {
@@ -125,4 +126,24 @@ func (r *personRepository) GetPelayananChurchByID(ctx context.Context, personID 
 	var pelayanan []entity.PersonPelayananGereja
 	err := r.db.WithContext(ctx).Preload("Church").Preload("Pelayanan").Where("person_id = ?", personID).Find(&pelayanan).Error
 	return pelayanan, err
+}
+
+func (r *personRepository) GetPeopleWithoutDepartmentInChurches(ctx context.Context, departmentID uuid.UUID, churchIDs []uuid.UUID) ([]entity.Person, error) {
+	var persons []entity.Person
+
+	// Subquery to find person_ids that have music department assignments
+	subQuery := r.db.Table("person_pelayanan_gerejas").
+		Select("DISTINCT person_pelayanan_gerejas.person_id").
+		Joins("JOIN pelayanans ON pelayanans.id = person_pelayanan_gerejas.pelayanan_id").
+		Where("pelayanans.department_id = ?", departmentID)
+
+	// Main query: get persons in specified churches who are NOT in the subquery
+	err := r.db.WithContext(ctx).
+		Preload("Church").
+		Where("church_id IN ?", churchIDs).
+		Where("id NOT IN (?)", subQuery).
+		Order("nama ASC").
+		Find(&persons).Error
+
+	return persons, err
 }

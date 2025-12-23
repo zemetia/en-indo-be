@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"github.com/zemetia/en-indo-be/entity"
 	"gorm.io/gorm"
 )
 
@@ -13,17 +14,16 @@ func (m *AddIsActiveToPersonPelayananGereja) GetName() string {
 
 func (m *AddIsActiveToPersonPelayananGereja) Up(db *gorm.DB) error {
 	// Add is_active column to person_pelayanan_gereja table
-	return db.Exec(`
-		ALTER TABLE person_pelayanan_gereja
-		ADD COLUMN is_active BOOLEAN DEFAULT true
-		COMMENT 'Indicates if this pelayanan assignment is currently active'
-	`).Error
+	if db.Migrator().HasColumn(&entity.PersonPelayananGereja{}, "IsActive") {
+		return nil
+	}
+	return db.Migrator().AddColumn(&entity.PersonPelayananGereja{}, "IsActive")
 }
 
 func (m *AddIsActiveToPersonPelayananGereja) Down(db *gorm.DB) error {
 	// Remove is_active column
-	return db.Exec(`
-		ALTER TABLE person_pelayanan_gereja
-		DROP COLUMN is_active
-	`).Error
+	if !db.Migrator().HasColumn(&entity.PersonPelayananGereja{}, "IsActive") {
+		return nil
+	}
+	return db.Migrator().DropColumn(&entity.PersonPelayananGereja{}, "IsActive")
 }

@@ -43,4 +43,11 @@ func ProvideLifeGroupDependencies(injector *do.Injector) {
 	do.Provide(injector, func(i *do.Injector) (controller.LifeGroupVisitorMemberController, error) {
 		return controller.NewLifeGroupVisitorMemberController(visitorMemberService), nil
 	})
+
+	// LifeGroup Event
+	lifeGroupEventRepository := repository.NewLifeGroupEventRepository(db)
+	lifeGroupEventService := service.NewLifeGroupEventService(lifeGroupEventRepository)
+	do.Provide(injector, func(i *do.Injector) (controller.LifeGroupEventController, error) {
+		return controller.NewLifeGroupEventController(lifeGroupEventService), nil
+	})
 }

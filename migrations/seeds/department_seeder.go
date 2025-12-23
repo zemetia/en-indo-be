@@ -11,7 +11,7 @@ import (
 func DepartmentSeeder(db *gorm.DB) error {
 	departments := []entity.Department{
 		{
-			Name:        "Pemusik",
+			Name:        "Musik",
 			Description: "Departemen yang menangani pelayanan musik",
 		},
 		{

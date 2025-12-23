@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"github.com/zemetia/en-indo-be/entity"
 	"gorm.io/gorm"
 )
 
@@ -12,6 +13,11 @@ func (m *AddQRTimestampToParticipants) GetName() string {
 }
 
 func (m *AddQRTimestampToParticipants) Up(db *gorm.DB) error {
+	// Check if column already exists
+	if db.Migrator().HasColumn(&entity.EventParticipant{}, "qr_scan_timestamp") {
+		return nil
+	}
+
 	// Add qr_scan_timestamp column to event_participants table
 	return db.Exec(`
 		ALTER TABLE event_participants

@@ -16,6 +16,7 @@ type MusikController interface {
 	RemovePelayanan(ctx *gin.Context)
 	ToggleActive(ctx *gin.Context)
 	GetAvailablePelayanan(ctx *gin.Context)
+	GetAvailablePeople(ctx *gin.Context)
 }
 
 type musikController struct {
@@ -250,4 +251,36 @@ func (c *musikController) GetAvailablePelayanan(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, pelayananRoles)
+}
+
+// GetAvailablePeople handles GET /api/musik/available-people
+// Returns list of people available to be added to music ministry
+func (c *musikController) GetAvailablePeople(ctx *gin.Context) {
+	// Get user_id from JWT middleware context
+	userIDInterface, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	userIDStr, ok := userIDInterface.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Call service
+	availablePeople, err := c.musikService.GetAvailablePeople(ctx.Request.Context(), userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, availablePeople)
 }

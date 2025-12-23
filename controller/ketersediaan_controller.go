@@ -32,6 +32,25 @@ func NewKetersediaanController(ketersediaanService service.KetersediaanService) 
 // @Failure 500 {object} map[string]interface{}
 // @Router /ketersediaan [post]
 func (c *KetersediaanController) CreateKetersediaan(ctx *gin.Context) {
+	// SECURITY: Extract person_id from JWT token, not request body
+	personIDStr, exists := ctx.Get("person_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Person ID not found in token",
+		})
+		return
+	}
+
+	personID, err := uuid.Parse(personIDStr.(string))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid person ID format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Bind request body
 	var req dto.CreateKetersediaanRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -40,6 +59,9 @@ func (c *KetersediaanController) CreateKetersediaan(ctx *gin.Context) {
 		})
 		return
 	}
+
+	// SECURITY: Override person_id with value from JWT
+	req.PersonID = personID
 
 	result, err := c.ketersediaanService.CreateKetersediaan(&req)
 	if err != nil {
@@ -65,6 +87,25 @@ func (c *KetersediaanController) CreateKetersediaan(ctx *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /ketersediaan/upsert [post]
 func (c *KetersediaanController) UpsertKetersediaan(ctx *gin.Context) {
+	// SECURITY: Extract person_id from JWT token, not request body
+	personIDStr, exists := ctx.Get("person_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Person ID not found in token",
+		})
+		return
+	}
+
+	personID, err := uuid.Parse(personIDStr.(string))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid person ID format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Bind request body
 	var req dto.CreateKetersediaanRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -73,6 +114,9 @@ func (c *KetersediaanController) UpsertKetersediaan(ctx *gin.Context) {
 		})
 		return
 	}
+
+	// SECURITY: Override person_id with value from JWT
+	req.PersonID = personID
 
 	result, err := c.ketersediaanService.UpsertKetersediaan(&req)
 	if err != nil {
@@ -302,6 +346,25 @@ func (c *KetersediaanController) GetEventAvailability(ctx *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /ketersediaan/bulk [post]
 func (c *KetersediaanController) BulkCreateKetersediaan(ctx *gin.Context) {
+	// SECURITY: Extract person_id from JWT token
+	personIDStr, exists := ctx.Get("person_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Person ID not found in token",
+		})
+		return
+	}
+
+	personID, err := uuid.Parse(personIDStr.(string))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid person ID format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Bind request body
 	var req dto.BulkCreateKetersediaanRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -309,6 +372,11 @@ func (c *KetersediaanController) BulkCreateKetersediaan(ctx *gin.Context) {
 			"details": err.Error(),
 		})
 		return
+	}
+
+	// SECURITY: Override person_id for all items
+	for i := range req.Availabilities {
+		req.Availabilities[i].PersonID = personID
 	}
 
 	result, err := c.ketersediaanService.BulkCreateKetersediaan(&req)
@@ -355,4 +423,25 @@ func (c *KetersediaanController) GetEventAvailabilitySummary(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, result)
+}
+
+// CleanupKetersediaan godoc
+// @Summary Cleanup old availability records
+// @Description Delete availability records older than 2 months
+// @Tags ketersediaan
+// @Accept json
+// @Produce json
+// @Success 204
+// @Failure 500 {object} map[string]interface{}
+// @Router /ketersediaan/cleanup [delete]
+func (c *KetersediaanController) CleanupKetersediaan(ctx *gin.Context) {
+	if err := c.ketersediaanService.CleanupOldKetersediaan(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to cleanup old availability",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
 }

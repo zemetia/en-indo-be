@@ -215,11 +215,11 @@ func (r *pelayananRepository) GetAssignmentsByDepartmentAndChurches(ctx context.
 		Preload("Pelayanan").
 		Preload("Pelayanan.Department").
 		Preload("Church").
-		Joins("JOIN pelayanan ON pelayanan.id = person_pelayanan_gereja.pelayanan_id").
-		Where("pelayanan.department_id = ?", departmentID)
+		Joins("JOIN pelayanans ON pelayanans.id = person_pelayanan_gerejas.pelayanan_id").
+		Where("pelayanans.department_id = ?", departmentID)
 
 	if len(churchIDs) > 0 {
-		query = query.Where("person_pelayanan_gereja.church_id IN ?", churchIDs)
+		query = query.Where("person_pelayanan_gerejas.church_id IN ?", churchIDs)
 	}
 
 	if err := query.Find(&assignments).Error; err != nil {
@@ -237,8 +237,8 @@ func (r *pelayananRepository) GetAssignmentsByPersonAndDepartment(ctx context.Co
 		Preload("Pelayanan").
 		Preload("Pelayanan.Department").
 		Preload("Church").
-		Joins("JOIN pelayanan ON pelayanan.id = person_pelayanan_gereja.pelayanan_id").
-		Where("person_pelayanan_gereja.person_id = ? AND pelayanan.department_id = ?", personID, departmentID).
+		Joins("JOIN pelayanans ON pelayanans.id = person_pelayanan_gerejas.pelayanan_id").
+		Where("person_pelayanan_gerejas.person_id = ? AND pelayanans.department_id = ?", personID, departmentID).
 		Find(&assignments).Error; err != nil {
 		return nil, err
 	}

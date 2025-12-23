@@ -25,6 +25,7 @@ func LifeGroup(route *gin.Engine, injector *do.Injector) {
 	lifeGroupController := do.MustInvoke[controller.LifeGroupController](injector)
 	personMemberController := do.MustInvoke[controller.LifeGroupPersonMemberController](injector)
 	visitorMemberController := do.MustInvoke[controller.LifeGroupVisitorMemberController](injector)
+	lifeGroupEventController := do.MustInvoke[controller.LifeGroupEventController](injector)
 
 	lifeGroup := route.Group("/api/lifegroup")
 	lifeGroup.Use(middleware.Authenticate(jwtService, userService))
@@ -75,6 +76,11 @@ func LifeGroup(route *gin.Engine, injector *do.Injector) {
 			manageGroup.POST("/:id/visitor-members", visitorMemberController.AddVisitorMember)
 			manageGroup.POST("/:id/visitor-members/batch", visitorMemberController.AddVisitorMembersBatch)
 			manageGroup.DELETE("/:id/visitor-members", visitorMemberController.RemoveVisitorMember)
+
+			// Event Management
+			manageGroup.POST("/events", lifeGroupEventController.Create)
+			manageGroup.PUT("/events/:event_id", lifeGroupEventController.Update)
+			manageGroup.DELETE("/events/:event_id", lifeGroupEventController.Delete)
 		}
 
 		// View-only endpoints for members (require view access - PIC, leader, co-leader, or member)
@@ -84,7 +90,10 @@ func LifeGroup(route *gin.Engine, injector *do.Injector) {
 			viewGroup.GET("/:id", lifeGroupController.GetByID)
 			viewGroup.GET("/:id/person-members", personMemberController.GetPersonMembers)
 			viewGroup.GET("/:id/leadership-structure", personMemberController.GetLeadershipStructure)
+
 			viewGroup.GET("/:id/visitor-members", visitorMemberController.GetVisitorMembers)
+			viewGroup.GET("/:id/events", lifeGroupEventController.FindByLifeGroupID)
+			viewGroup.GET("/events/:event_id", lifeGroupEventController.FindByID)
 		}
 
 	}

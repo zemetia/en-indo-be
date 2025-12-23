@@ -47,3 +47,14 @@ type MusicianPelayananDetailResponse struct {
 	IsActive     bool   `json:"is_active"`
 	IsPic        bool   `json:"is_pic"`
 }
+
+// AvailablePersonResponse represents a person available to be added to music ministry
+type AvailablePersonResponse struct {
+	ID         string `json:"id"`
+	Nama       string `json:"nama"`
+	Email      string `json:"email"`
+	Telepon    string `json:"telepon"`
+	ChurchID   string `json:"church_id"`
+	ChurchName string `json:"church_name"`
+	Avatar     string `json:"avatar"`
+}

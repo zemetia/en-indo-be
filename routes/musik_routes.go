@@ -26,5 +26,16 @@ func Musik(route *gin.Engine, injector *do.Injector) {
 
 		// Available Pelayanan Roles
 		musik.GET("/pelayanan-roles", musikController.GetAvailablePelayanan)
+
+		// Available People (congregation members not in music yet)
+		musik.GET("/available-people", musikController.GetAvailablePeople)
+
+		// Lagu Management
+		laguController := do.MustInvokeNamed[controller.LaguController](injector, constants.LaguController)
+		musik.GET("/lagu", laguController.FindAll)
+		musik.GET("/lagu/:id", laguController.FindByID)
+		musik.POST("/lagu", laguController.Create)
+		musik.PUT("/lagu/:id", laguController.Update)
+		musik.DELETE("/lagu/:id", laguController.Delete)
 	}
 }

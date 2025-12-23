@@ -21,6 +21,7 @@ type KetersediaanService interface {
 	BulkCreateKetersediaan(req *dto.BulkCreateKetersediaanRequest) ([]dto.KetersediaanResponse, error)
 	GetEventAvailabilitySummary(req *dto.GetEventAvailabilitySummaryRequest) (*dto.EventAvailabilitySummaryResponse, error)
 	UpsertKetersediaan(req *dto.CreateKetersediaanRequest) (*dto.KetersediaanResponse, error)
+	CleanupOldKetersediaan() error
 }
 
 type ketersediaanService struct {
@@ -380,4 +381,15 @@ func (s *ketersediaanService) toResponse(k *entity.Ketersediaan) *dto.Ketersedia
 	}
 
 	return response
+}
+
+func (s *ketersediaanService) CleanupOldKetersediaan() error {
+	// Calculate date 2 months ago
+	retentionDate := time.Now().AddDate(0, -2, 0)
+
+	if err := s.ketersediaanRepo.CleanupOldKetersediaan(retentionDate); err != nil {
+		return fmt.Errorf("failed to cleanup old availability: %w", err)
+	}
+
+	return nil
 }

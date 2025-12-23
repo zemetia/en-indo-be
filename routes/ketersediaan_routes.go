@@ -5,36 +5,42 @@ import (
 	"github.com/samber/do"
 	"github.com/zemetia/en-indo-be/constants"
 	"github.com/zemetia/en-indo-be/controller"
+	"github.com/zemetia/en-indo-be/middleware"
 	"github.com/zemetia/en-indo-be/repository"
 	"github.com/zemetia/en-indo-be/service"
 	"gorm.io/gorm"
 )
 
 func KetersediaanRoutes(router *gin.RouterGroup, injector *do.Injector) {
-	// Get dependencies from injector
-	db := do.MustInvokeNamed[*gorm.DB](injector, constants.DB)
+	// Get authentication services
+	jwtService := do.MustInvokeNamed[service.JWTService](injector, constants.JWTService)
+	userService := do.MustInvokeNamed[service.UserService](injector, constants.UserService)
 
-	// Create repositories and services
+	// Get database and create repositories/services
+	db := do.MustInvokeNamed[*gorm.DB](injector, constants.DB)
 	ketersediaanRepo := repository.NewKetersediaanRepository(db)
 	personRepo := repository.NewPersonRepository(db)
 	eventRepo := repository.NewEventRepository(db)
-
 	ketersediaanService := service.NewKetersediaanService(ketersediaanRepo, personRepo, eventRepo)
-
-	// Create controller
 	ketersediaanController := controller.NewKetersediaanController(ketersediaanService)
 
-	// Ketersediaan routes - specific paths first
-	router.POST("/ketersediaan/upsert", ketersediaanController.UpsertKetersediaan)
-	router.POST("/ketersediaan/bulk", ketersediaanController.BulkCreateKetersediaan)
-	router.GET("/ketersediaan/summary", ketersediaanController.GetEventAvailabilitySummary)
+	// Create authenticated route group
+	routes := router.Group("/ketersediaan")
+	routes.Use(middleware.Authenticate(jwtService, userService))
+	{
+		// Specific paths first
+		routes.POST("/upsert", ketersediaanController.UpsertKetersediaan)
+		routes.POST("/bulk", ketersediaanController.BulkCreateKetersediaan)
+		routes.GET("/summary", ketersediaanController.GetEventAvailabilitySummary)
+		routes.DELETE("/cleanup", ketersediaanController.CleanupKetersediaan)
 
-	// Basic CRUD routes
-	router.POST("/ketersediaan", ketersediaanController.CreateKetersediaan)
-	router.GET("/ketersediaan", ketersediaanController.GetPersonAvailability)
-	router.GET("/ketersediaan/:id", ketersediaanController.GetKetersediaan)
-	router.PUT("/ketersediaan/:id", ketersediaanController.UpdateKetersediaan)
-	router.DELETE("/ketersediaan/:id", ketersediaanController.DeleteKetersediaan)
+		// Basic CRUD routes
+		routes.POST("", ketersediaanController.CreateKetersediaan)
+		routes.GET("", ketersediaanController.GetPersonAvailability)
+		routes.GET("/:id", ketersediaanController.GetKetersediaan)
+		routes.PUT("/:id", ketersediaanController.UpdateKetersediaan)
+		routes.DELETE("/:id", ketersediaanController.DeleteKetersediaan)
+	}
 
 	// Event-specific availability routes
 	// Note: /events/:id/availability route conflicts with existing event routes

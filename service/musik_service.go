@@ -18,6 +18,7 @@ type MusikService interface {
 	RemovePelayananFromMusician(ctx context.Context, userID uuid.UUID, assignmentID uuid.UUID) error
 	ToggleActiveStatus(ctx context.Context, userID uuid.UUID, assignmentID uuid.UUID, isActive bool) error
 	GetAvailableMusikPelayanan(ctx context.Context) ([]dto.PelayananRoleResponse, error)
+	GetAvailablePeople(ctx context.Context, userID uuid.UUID) ([]dto.AvailablePersonResponse, error)
 }
 
 type musikService struct {
@@ -46,7 +47,7 @@ func NewMusikService(
 // If user is not PIC Musik: returns empty list (only PICs can manage musicians)
 func (s *musikService) GetPelayanMusik(ctx context.Context, userID uuid.UUID) ([]dto.MusicianResponse, error) {
 	// Get the music department
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get music department: %v", err)
 	}
@@ -106,24 +107,28 @@ func (s *musikService) GetPelayanMusik(ctx context.Context, userID uuid.UUID) ([
 				Email:       assignment.Person.Email,
 				Telepon:     assignment.Person.NomorTelepon,
 				Instruments: []string{},
-				Status:      "inactive", // Will be set to active if any assignment is active
+				Status:      "active", // Will be set to inactive if any assignment is inactive
 				Avatar:      "https://placehold.co/100x100.png", // Default avatar
 			}
 		}
 
-		// Add pelayanan to instruments list
-		musicianMap[personID].Instruments = append(musicianMap[personID].Instruments, assignment.Pelayanan.Pelayanan)
+		// Add pelayanan to instruments list only if NOT a PIC role
+		if !assignment.Pelayanan.IsPic {
+			musicianMap[personID].Instruments = append(musicianMap[personID].Instruments, assignment.Pelayanan.Pelayanan)
+		}
 
-		// If any assignment is active, set status to active
-		if assignment.IsActive {
-			musicianMap[personID].Status = "active"
+		// If any assignment is inactive, set status to inactive
+		if !assignment.IsActive {
+			musicianMap[personID].Status = "inactive"
 		}
 	}
 
-	// Convert map to slice
+	// Convert map to slice, excluding entries with no instruments (PIC only)
 	musicians := make([]dto.MusicianResponse, 0, len(musicianMap))
 	for _, musician := range musicianMap {
-		musicians = append(musicians, *musician)
+		if len(musician.Instruments) > 0 {
+			musicians = append(musicians, *musician)
+		}
 	}
 
 	return musicians, nil
@@ -132,7 +137,7 @@ func (s *musikService) GetPelayanMusik(ctx context.Context, userID uuid.UUID) ([
 // GetPelayanMusikByID gets detailed information about a specific musician
 func (s *musikService) GetPelayanMusikByID(ctx context.Context, userID uuid.UUID, personID uuid.UUID) (*dto.MusicianDetailResponse, error) {
 	// Get the music department
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get music department: %v", err)
 	}
@@ -148,17 +153,16 @@ func (s *musikService) GetPelayanMusikByID(ctx context.Context, userID uuid.UUID
 		return nil, fmt.Errorf("failed to get user assignments: %v", err)
 	}
 
-	// Check PIC permission
-	isPICMusik := false
+	// Check PIC permission and collect church IDs
+	picChurchIDs := make(map[uuid.UUID]bool)
 	for _, assignment := range assignments {
 		if assignment.Pelayanan.IsPic &&
 			assignment.Pelayanan.DepartmentID == musikDept.ID {
-			isPICMusik = true
-			break
+			picChurchIDs[assignment.ChurchID] = true
 		}
 	}
 
-	if !isPICMusik {
+	if len(picChurchIDs) == 0 {
 		return nil, fmt.Errorf("user does not have PIC Musik permission")
 	}
 
@@ -166,6 +170,11 @@ func (s *musikService) GetPelayanMusikByID(ctx context.Context, userID uuid.UUID
 	person, err := s.personRepo.GetByID(ctx, personID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get person: %v", err)
+	}
+
+	// Verify person belongs to a church where user has PIC permission
+	if !picChurchIDs[person.ChurchID] {
+		return nil, fmt.Errorf("user does not have permission for this person's church")
 	}
 
 	// Get all music assignments for this person
@@ -209,13 +218,23 @@ func (s *musikService) AssignPelayananToMusician(ctx context.Context, userID uui
 		return fmt.Errorf("failed to get pelayanan: %v", err)
 	}
 
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return fmt.Errorf("failed to get music department: %v", err)
 	}
 
 	if pelayanan.DepartmentID != musikDept.ID {
 		return fmt.Errorf("pelayanan is not in music department")
+	}
+
+	// Verify person exists and belongs to the specified church
+	person, err := s.personRepo.GetByID(ctx, req.PersonID)
+	if err != nil {
+		return fmt.Errorf("failed to get person: %v", err)
+	}
+
+	if person.ChurchID != req.ChurchID {
+		return fmt.Errorf("person does not belong to specified church")
 	}
 
 	// Verify user has PIC permission
@@ -280,7 +299,7 @@ func (s *musikService) RemovePelayananFromMusician(ctx context.Context, userID u
 	}
 
 	// Verify the assignment is in music department
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return fmt.Errorf("failed to get music department: %v", err)
 	}
@@ -337,7 +356,7 @@ func (s *musikService) ToggleActiveStatus(ctx context.Context, userID uuid.UUID,
 	}
 
 	// Verify the assignment is in music department
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return fmt.Errorf("failed to get music department: %v", err)
 	}
@@ -389,7 +408,7 @@ func (s *musikService) ToggleActiveStatus(ctx context.Context, userID uuid.UUID,
 // GetAvailableMusikPelayanan gets all available pelayanan roles in the music department
 func (s *musikService) GetAvailableMusikPelayanan(ctx context.Context) ([]dto.PelayananRoleResponse, error) {
 	// Get the music department
-	musikDept, err := s.departmentRepo.GetByName("Pemusik")
+	musikDept, err := s.departmentRepo.GetByName("Musik")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get music department: %v", err)
 	}
@@ -408,6 +427,74 @@ func (s *musikService) GetAvailableMusikPelayanan(ctx context.Context) ([]dto.Pe
 			Pelayanan:   pelayanan.Pelayanan,
 			Description: pelayanan.Description,
 			IsPic:       pelayanan.IsPic,
+		})
+	}
+
+	return responses, nil
+}
+
+// GetAvailablePeople gets all people available to be added to music ministry
+// Returns people from churches where user is PIC Musik who don't have any music assignments yet
+func (s *musikService) GetAvailablePeople(ctx context.Context, userID uuid.UUID) ([]dto.AvailablePersonResponse, error) {
+	// Get the music department
+	musikDept, err := s.departmentRepo.GetByName("Musik")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get music department: %v", err)
+	}
+
+	// Get user to find their PersonID
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %v", err)
+	}
+
+	// Get all pelayanan assignments for this person
+	assignments, err := s.pelayananRepo.GetPelayananByPersonID(ctx, user.PersonID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user assignments: %v", err)
+	}
+
+	// Check if user has PIC Musik role and collect their church IDs
+	picChurchIDs := make(map[uuid.UUID]bool)
+	for _, assignment := range assignments {
+		// Check if pelayanan is in Music department and is PIC role
+		if assignment.Pelayanan.IsPic &&
+			assignment.Pelayanan.DepartmentID == musikDept.ID &&
+			(assignment.Pelayanan.Pelayanan == "PIC Musik" ||
+				(strings.Contains(strings.ToLower(assignment.Pelayanan.Pelayanan), "pic") &&
+					strings.Contains(strings.ToLower(assignment.Pelayanan.Pelayanan), "musik"))) {
+			picChurchIDs[assignment.ChurchID] = true
+		}
+	}
+
+	// If user has no PIC Musik role, return empty list
+	if len(picChurchIDs) == 0 {
+		return []dto.AvailablePersonResponse{}, nil
+	}
+
+	// Convert map keys to slice
+	churchIDSlice := make([]uuid.UUID, 0, len(picChurchIDs))
+	for churchID := range picChurchIDs {
+		churchIDSlice = append(churchIDSlice, churchID)
+	}
+
+	// Get people who don't have any music department assignments in these churches
+	availablePeople, err := s.personRepo.GetPeopleWithoutDepartmentInChurches(ctx, musikDept.ID, churchIDSlice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get available people: %v", err)
+	}
+
+	// Convert to response DTOs
+	responses := make([]dto.AvailablePersonResponse, 0, len(availablePeople))
+	for _, person := range availablePeople {
+		responses = append(responses, dto.AvailablePersonResponse{
+			ID:         person.ID.String(),
+			Nama:       person.Nama,
+			Email:      person.Email,
+			Telepon:    person.NomorTelepon,
+			ChurchID:   person.ChurchID.String(),
+			ChurchName: person.Church.Name,
+			Avatar:     "https://placehold.co/100x100.png",
 		})
 	}
 

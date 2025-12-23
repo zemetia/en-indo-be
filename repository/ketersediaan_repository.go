@@ -19,6 +19,7 @@ type KetersediaanRepository interface {
 	FindByDateRange(personID *uuid.UUID, startDate, endDate time.Time) ([]entity.Ketersediaan, error)
 	BulkCreate(ketersediaan []entity.Ketersediaan) error
 	GetAvailabilitySummary(eventID uuid.UUID, occurrenceDate time.Time) (map[string]int, error)
+	CleanupOldKetersediaan(retentionDate time.Time) error
 }
 
 type ketersediaanRepository struct {
@@ -164,4 +165,8 @@ func (r *ketersediaanRepository) GetAvailabilitySummary(eventID uuid.UUID, occur
 	}
 
 	return summary, nil
+}
+
+func (r *ketersediaanRepository) CleanupOldKetersediaan(retentionDate time.Time) error {
+	return r.db.Where("occurrence_date < ?", retentionDate).Delete(&entity.Ketersediaan{}).Error
 }

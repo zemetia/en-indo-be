@@ -49,6 +49,7 @@ func Migrate(db *gorm.DB) error {
 		&entity.Ketersediaan{},
 		&entity.EventDepartment{},
 		&entity.EventParticipant{},
+		&entity.LifeGroupEvent{},
 	); err != nil {
 		return err
 	}
@@ -119,6 +120,16 @@ func Migrate(db *gorm.DB) error {
 	// Add is_active column to person_pelayanan_gereja table
 	isActiveMigration := &AddIsActiveToPersonPelayananGereja{}
 	if err := isActiveMigration.Up(db); err != nil {
+		return err
+	}
+
+	// Add Tags column to lagu table
+	if err := AddTagsToLagu(db); err != nil {
+		return err
+	}
+
+	// Add OriginalLaguID column to lagu table
+	if err := AddOriginalLaguIDToLagu(db); err != nil {
 		return err
 	}
 
